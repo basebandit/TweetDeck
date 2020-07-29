@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -60,7 +62,8 @@ func errInternalServerError(err error) render.Renderer {
 }
 
 type server struct {
-	port    string
+	port string
+	// db      *mongo.Database
 	router  *chi.Mux
 	records []map[string]string //inmemory rows read from csv file.
 }
@@ -78,11 +81,35 @@ func main() {
 	r := chi.NewRouter()
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 
+	ctx := context.Background()
+
+	db, err := connect(ctx, "localhost:27017", "avatar", "avatar", "avatars")
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	srv := server{
-		port:    ":5000",
+		port: ":5000",
+		// db:      db,
 		router:  r,
 		records: csvToMap(bytes.NewReader(file)),
 	}
+
+	i, err := strconv.ParseInt("1594079999", 10, 64)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fd := time.Unix(i, 0)
+
+	res, err := insertRecord(ctx, db, csvToAvatar(bytes.NewReader(file)), fd)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(res)
 
 	walkFunc := func(method string, route string, handler http.Handler, middlewares ...func(http.Handler) http.Handler) error {
 		route = strings.Replace(route, "/*/", "/", -1)
@@ -247,6 +274,52 @@ func csvToMap(reader io.Reader) []map[string]string {
 		}
 	}
 	return rows
+}
+
+func csvToAvatar(reader io.Reader) []avatar {
+
+	r := csv.NewReader(reader)
+
+	var avatars []avatar
+	var header []string
+
+	for {
+		line, err := r.Read()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if header == nil {
+			header = line
+			continue
+		}
+
+		avatars = append(avatars, avatar{
+			ID:              line[0],
+			Name:            line[1],
+			Username:        line[2],
+			Bio:             line[3],
+			Location:        line[4],
+			URL:             line[5],
+			JoinDate:        line[6],
+			JoinTime:        line[7],
+			Tweets:          line[8],
+			Following:       line[9],
+			Followers:       line[10],
+			Likes:           line[11],
+			Media:           line[12],
+			Private:         line[13],
+			Verified:        line[14],
+			ProfileImage:    line[15],
+			BackgroundImage: line[16],
+		})
+	}
+
+	return avatars
 }
 
 //sort by order 1: ascending  -1 : descending
