@@ -19,7 +19,7 @@
             ></v-text-field>
           </v-row>
         </v-card-text>
-        <v-data-table :headers="headers" :items="team" :search="search"></v-data-table>
+        <v-data-table :headers="headers" :items="team" :search="search" @click:row="handleClick"></v-data-table>
       </v-card>
     </v-container>
   </div>
@@ -30,17 +30,24 @@ export default {
     return {
       search: "",
       headers: [
-        { text: "Member", sortable: false, align: "start", value: "name" },
+        {
+          text: "Firstname",
+          sortable: false,
+          align: "start",
+          value: "firstname",
+        },
+        { text: "Lastname", sortable: false, value: "lastname" },
         { text: "Avatars", value: "avatars" },
         { text: "CreatedAt", value: "createdAt" },
         { text: "Followers", value: "followers" },
         { text: "Following", value: "following" },
-        { text: "Likes", value: "likes" },
         { text: "Tweets", value: "tweets" },
       ],
       team: [
         {
-          name: "Evanson Mwangi",
+          id: 1,
+          firstname: "Evanson ",
+          lastname: "Mwangi",
           avatars: 120,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -49,7 +56,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Marcus Mwangi",
+          id: 2,
+          firstname: "Marcus",
+          lastname: "Mwangi",
           avatars: 320,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -58,7 +67,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Mercy Orangi",
+          id: 3,
+          firstname: "Mercy ",
+          lastname: "Orangi",
           avatars: 620,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -67,7 +78,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Millicent Achieng",
+          id: 4,
+          firstname: "Millicent",
+          lastname: "Achieng",
           avatars: 120,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -76,7 +89,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Edward Kitili",
+          id: 5,
+          firstname: "Edward",
+          lastname: "Kitili",
           avatars: 80,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -85,7 +100,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Changaresi Mugamura",
+          id: 6,
+          firstname: "Changaresi",
+          lastname: "Mugamura",
           avatars: 60,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -94,7 +111,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Everlyne Waithera",
+          id: 7,
+          firstname: "Everlyne ",
+          lastname: "Waithera",
           avatars: 140,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -103,7 +122,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Wilberforce Juma",
+          id: 8,
+          firstname: "Wilberforce",
+          lastname: "Juma",
           avatars: 89,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -112,7 +133,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Yvette Anyango",
+          id: 9,
+          firstname: "Yvette ",
+          lastname: "Anyango",
           avatars: 96,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -121,7 +144,9 @@ export default {
           tweets: 500,
         },
         {
-          name: "Linete Wavinya",
+          id: 10,
+          firstname: "Linete ",
+          lastname: "Wavinya",
           avatars: 80,
           createdAt: "May 26, 2020 10:09am",
           followers: 780,
@@ -131,6 +156,14 @@ export default {
         },
       ],
     };
+  },
+  methods: {
+    handleClick(item) {
+      /**eslint-disable */
+      console.log(item.id);
+
+      this.$router.push({ path: `/team/member/${item.id}` }); // -> /user/123
+    },
   },
 };
 </script>
