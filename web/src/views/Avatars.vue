@@ -31,6 +31,43 @@
               <v-spacer></v-spacer>
 
               <v-spacer></v-spacer>
+
+              <v-dialog v-model="assignDialog" persistent v-if="showAssign" max-width="600px">
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    class="ma-2"
+                    small
+                    color="success"
+                    v-on="on"
+                    v-bind="attrs"
+                    slot="activator"
+                  >
+                    <v-icon small left>mdi-account-multiple-plus</v-icon>Assign
+                  </v-btn>
+                </template>
+
+                <v-card>
+                  <v-card-title>
+                    <span class="headline">Assign Selected Avatar(s)</span>
+                  </v-card-title>
+                  <v-card-text>
+                    <v-container>
+                      <v-row>
+                        <v-col cols="12">
+                          <v-autocomplete :items="members" label="Member to assign"></v-autocomplete>
+                        </v-col>
+                      </v-row>
+                    </v-container>
+                    <small>*indicates required field</small>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn color="blue darken-1" text @click="assignDialog = false">Close</v-btn>
+                    <v-btn color="blue darken-1" text @click="assignDialog = false">Assign</v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+
               <v-tooltip top>
                 <template v-slot:activator="{ on, attrs }">
                   <v-btn
@@ -68,59 +105,124 @@
         </template>
 
         <template v-slot:default="props">
-          <v-row>
-            <v-col v-for="item in props.items" :key="item.handle" cols="12" sm="6" md="4" lg="3">
-              <v-card class="ma-4" align="center">
-                <v-responsive class="pt-4">
-                  <v-avatar size="100" class="grey lighten-2">
-                    <img :src="item.profile" />
-                  </v-avatar>
-                </v-responsive>
+          <v-item-group multiple v-model="selected">
+            <v-container>
+              <v-row>
+                <v-col
+                  v-for="item in props.items"
+                  :key="item.handle"
+                  cols="12"
+                  sm="6"
+                  md="4"
+                  lg="3"
+                >
+                  <v-item v-slot:default="{active,toggle}">
+                    <v-card
+                      :color="active?'secondary':''"
+                      class="ma-4"
+                      align="center"
+                      v-if="item.assigned"
+                    >
+                      <v-responsive class="pt-4">
+                        <v-avatar size="100" class="grey lighten-2">
+                          <img :src="item.profile" />
+                        </v-avatar>
+                      </v-responsive>
 
-                <v-card-subtitle>
-                  <div class="grey--text">@{{item.handle}}</div>
-                  <div class="grey--text text--darken-4">{{item.bio}}</div>
-                </v-card-subtitle>
-                <v-card-text>
-                  <div class="grey--text text--darken-4">
-                    {{item.following}}
-                    <span class="grey--text text-caption">following</span>
-                    {{item.followers}}
-                    <span
-                      class="grey--text text-caption"
-                    >followers</span>
-                  </div>
-                  <div v-if="item.assigned">
-                    <v-chip class="ma-2" color="indigo" text-color="white">
-                      <v-icon left>mdi-account-multiple-check</v-icon>assigned
-                    </v-chip>
-                  </div>
-                  <div v-else>
-                    <v-chip class="ma-2" text-color="grey">
-                      <v-icon left>mdi-account-multiple-remove</v-icon>unasssigned
-                    </v-chip>
-                  </div>
-                </v-card-text>
-                <!-- <v-divider></v-divider> -->
+                      <v-card-subtitle>
+                        <div class="grey--text">@{{item.handle}}</div>
+                        <div class="grey--text text--darken-4">{{item.bio}}</div>
+                      </v-card-subtitle>
+                      <v-card-text>
+                        <div class="grey--text text--darken-4">
+                          {{item.following}}
+                          <span class="grey--text text-caption">following</span>
+                          {{item.followers}}
+                          <span
+                            class="grey--text text-caption"
+                          >followers</span>
+                        </div>
+                        <div>
+                          <v-chip class="ma-2" color="indigo" text-color="white">
+                            <v-icon left>mdi-account-multiple-check</v-icon>assigned
+                          </v-chip>
+                        </div>
+                      </v-card-text>
+                      <!-- <v-divider></v-divider> -->
 
-                <v-card-actions>
-                  <v-row class="ma-3 text-sm grey--text">
-                    <div>
-                      <v-icon small left>mdi-twitter</v-icon>
-                      <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
-                    </div>
+                      <v-card-actions>
+                        <v-row class="ma-3 text-sm grey--text">
+                          <div>
+                            <v-icon small left>mdi-twitter</v-icon>
+                            <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                          </div>
 
-                    <v-spacer></v-spacer>
-                    <div class="text-subtitle-1">
-                      <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
-                      <span class="grey--text text--darken-4">Joined</span>
-                      {{item.joined}}
-                    </div>
-                  </v-row>
-                </v-card-actions>
-              </v-card>
-            </v-col>
-          </v-row>
+                          <v-spacer></v-spacer>
+                          <div class="text-subtitle-1">
+                            <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
+                            <span class="grey--text text--darken-4">Joined</span>
+                            {{item.joined}}
+                          </div>
+                        </v-row>
+                      </v-card-actions>
+                    </v-card>
+
+                    <v-card
+                      :color="active?'secondary':''"
+                      class="ma-4"
+                      align="center"
+                      @click.stop="assign(toggle)"
+                      v-else
+                    >
+                      <v-responsive class="pt-4">
+                        <v-avatar size="100" class="grey lighten-2">
+                          <img :src="item.profile" />
+                        </v-avatar>
+                      </v-responsive>
+
+                      <v-card-subtitle>
+                        <div class="grey--text">@{{item.handle}}</div>
+                        <div class="grey--text text--darken-4">{{item.bio}}</div>
+                      </v-card-subtitle>
+                      <v-card-text>
+                        <div class="grey--text text--darken-4">
+                          {{item.following}}
+                          <span class="grey--text text-caption">following</span>
+                          {{item.followers}}
+                          <span
+                            class="grey--text text-caption"
+                          >followers</span>
+                        </div>
+
+                        <div>
+                          <v-chip class="ma-2" text-color="grey">
+                            <v-icon left>mdi-account-multiple-remove</v-icon>unasssigned
+                          </v-chip>
+                        </div>
+                      </v-card-text>
+                      <!-- <v-divider></v-divider> -->
+
+                      <v-card-actions>
+                        <v-row class="ma-3 text-sm grey--text">
+                          <div>
+                            <v-icon small left>mdi-twitter</v-icon>
+                            <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                          </div>
+
+                          <v-spacer></v-spacer>
+                          <div class="text-subtitle-1">
+                            <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
+                            <span class="grey--text text--darken-4">Joined</span>
+                            {{item.joined}}
+                          </div>
+                        </v-row>
+                      </v-card-actions>
+                    </v-card>
+                  </v-item>
+                </v-col>
+              </v-row>
+            </v-container>
+          </v-item-group>
         </template>
 
         <template v-slot:footer>
@@ -170,6 +272,120 @@ export default {
       sortDesc: false,
       page: 1,
       sortByHandle: "handle",
+      selected: [],
+      assignDialog: false,
+      team: [
+        {
+          id: 1,
+          firstname: "Evanson ",
+          lastname: "Mwangi",
+          avatars: 120,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 2,
+          firstname: "Marcus",
+          lastname: "Mwangi",
+          avatars: 320,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 3,
+          firstname: "Mercy ",
+          lastname: "Orangi",
+          avatars: 620,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 4,
+          firstname: "Millicent",
+          lastname: "Achieng",
+          avatars: 120,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 5,
+          firstname: "Edward",
+          lastname: "Kitili",
+          avatars: 80,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 6,
+          firstname: "Changaresi",
+          lastname: "Mugamura",
+          avatars: 60,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 7,
+          firstname: "Everlyne ",
+          lastname: "Waithera",
+          avatars: 140,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 8,
+          firstname: "Wilberforce",
+          lastname: "Juma",
+          avatars: 89,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 9,
+          firstname: "Yvette ",
+          lastname: "Anyango",
+          avatars: 96,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+        {
+          id: 10,
+          firstname: "Linete ",
+          lastname: "Wavinya",
+          avatars: 80,
+          createdAt: "May 26, 2020 10:09am",
+          followers: 780,
+          following: 300,
+          likes: 600,
+          tweets: 500,
+        },
+      ],
       avatars: [
         {
           handle: "mwasyakyalo",
@@ -334,6 +550,16 @@ export default {
     numberOfPages() {
       return Math.ceil(this.avatars.length / this.avatarsPerPage);
     },
+    showAssign() {
+      return this.selected.length > 0;
+    },
+    members() {
+      const names = [];
+      this.team.forEach((member) =>
+        names.push(member.firstname + " " + member.lastname)
+      );
+      return names;
+    },
     // filteredKeys() {
     //   return this.keys.filter((key) => key !== `Name`);
     // },
@@ -353,6 +579,10 @@ export default {
     },
     sortDescendingBy(prop) {
       this.avatars.sort((a, b) => (a[prop] > b[prop] ? -1 : 1));
+    },
+    assign(e) {
+      /**eslint-disable */
+      console.log(e(this));
     },
   },
 };
