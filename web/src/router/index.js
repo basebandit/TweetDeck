@@ -2,6 +2,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import Dashboard from '../views/Dashboard.vue'
 import Team from '@/views/Team.vue'
+import Member from '@/views/Member.vue'
 
 Vue.use(VueRouter)
 
@@ -23,7 +24,13 @@ Vue.use(VueRouter)
     path:'/team',
     name:'Team',
     component:Team
-  }
+  },
+  { 
+    path: '/team/member/:id',
+  name:'Member',
+   component: Member, 
+   props: true 
+  },
 ]
 
 const router = new VueRouter({
