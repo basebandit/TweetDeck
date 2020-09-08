@@ -3,6 +3,7 @@ package avatar
 import (
 	"context"
 	"database/sql"
+
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,10 @@ func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now ti
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.update")
 	defer span.End()
 
+	if _, err := uuid.Parse(id); err != nil {
+		return ErrInvalidID
+	}
+
 	a, err := GetByID(ctx, db, id)
 	if err != nil {
 		return err
@@ -59,18 +64,23 @@ func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now ti
 	}
 
 	if ua.UserID != nil {
-		a.UserID = *ua.UserID
+
+		if _, err := uuid.Parse(*ua.UserID); err != nil {
+			return ErrInvalidID
+		}
+
+		a.UserID = ua.UserID
 	}
 
 	a.UpdatedAt = now
 
 	const q = `UPDATE avatars SET
-	"username" = $2,
-	"user_id" = $3,
+	"user_id" = $2,
+	"username" = $3,
 	"updated_at" = $4
 	WHERE id = $1`
 
-	if _, err := db.ExecContext(ctx, q, id, a.Username, a.UserID); err != nil {
+	if _, err := db.ExecContext(ctx, q, a.ID, *a.UserID, a.Username, a.UpdatedAt); err != nil {
 		return errors.Wrap(err, "updating avatar")
 	}
 
@@ -100,10 +110,10 @@ func Delete(ctx context.Context, db *sqlx.DB, id string, now time.Time) error {
 
 //Get retrieves all Avatars from the database.
 func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
-ctx,span := global.Tracer("avatarlysis").Start(ctx,"business.data.avatar.get")
-defer span.End()
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
+	defer span.End()
 
-const q = `with allp as (
+	const q = `with allp as (
 	SELECT a.username,
 	a.user_id,
 	p.followers,
@@ -128,12 +138,12 @@ const q = `with allp as (
 		allp.likes,
 		allp.bio from allp where priority_number = 1;`
 
-		avatars := []Avatar{}
-		if err := db.SelectContext(ctx,&avatars,q);err != nil{
-			return nil,errors.Wrap(err,"selecting avatars")
-		}
+	avatars := []Avatar{}
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, errors.Wrap(err, "selecting avatars")
+	}
 
-		return avatars,nil
+	return avatars, nil
 }
 
 //GetByID finds the avatar identified by a given ID.
@@ -145,25 +155,26 @@ func GetByID(ctx context.Context, db *sqlx.DB, id string) (Avatar, error) {
 		return Avatar{}, ErrInvalidID
 	}
 
-	const q = `SELECT
-	a.username AS username,
-	a.user_id AS user_id,
-	p.followers AS followers,
-	p.following AS following,
-	p.tweets AS tweets,
-	p.join_date AS join_date,
-	p.likes AS likes,
-	p.bio AS bio from avatars a LEFT JOIN
- profiles p on a.id = p.avatar_id 
-	WHERE a.id=$1 ORDER BY p.created_at DESC LIMIT 1;
-	`
+	const q = `SELECT a.id as id,
+		a.username ,
+		a.user_id,
+		a.created_at,
+		a.updated_at,
+		p.bio,p.profile_image_url,p.twitter_id,
+		p.followers,p.following, p.likes,p.tweets, p.join_date,p.last_tweet_time from avatars a LEFT JOIN
+	 profiles p on a.id = p.avatar_id
+		WHERE a.id=$1 AND active=TRUE ORDER BY p.created_at DESC LIMIT 1;
+		`
+
 	var a Avatar
+
 	if err := db.GetContext(ctx, &a, q, id); err != nil {
 		if err == sql.ErrNoRows {
 			return Avatar{}, ErrNotFound
 		}
 		return Avatar{}, errors.Wrap(err, "selecting single avatar")
 	}
+
 	//TODO: Check if user_id field is null using sqlx then set a.Assigned to 0 if it is null otherwise set to 1.
 
 	return a, nil
