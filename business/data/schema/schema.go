@@ -21,6 +21,7 @@ var migrations = []darwin.Migration{
 			id UUID PRIMARY KEY,
 			firstname TEXT,
 			lastname TEXT,
+			active BOOLEAN DEFAULT TRUE,
 			email TEXT UNIQUE,
 			password_hash TEXT,
 			created_at TIMESTAMP,
