@@ -114,7 +114,9 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 	defer span.End()
 
 	const q = `with allp as (
-	SELECT a.username,
+	SELECT 
+	a.id,
+	a.username,
 	a.user_id,
 	p.followers,
 	p.following,
@@ -123,13 +125,17 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 	p.likes,
 	p.bio,
 	row_number() over (
-		partition by a.user_id ,
+		partition by 
+		a.id,
+		a.user_id ,
 		a.username order by p.created_at desc,
 		p.id desc) as priority_number from 
 		avatars a LEFT JOIN profiles p ON
 		a.id = p.avatar_id
 		) 
-		select allp.username,
+		select 
+		allp.id,
+		allp.username,
 		allp.user_id,
 		allp.followers,
 		allp.following,
@@ -155,8 +161,9 @@ func GetByID(ctx context.Context, db *sqlx.DB, id string) (Avatar, error) {
 		return Avatar{}, ErrInvalidID
 	}
 
-	const q = `SELECT a.id as id,
-		a.username ,
+	const q = `SELECT
+	  a.id,
+		a.username,
 		a.user_id,
 		a.created_at,
 		a.updated_at,
@@ -189,10 +196,10 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 		return nil, ErrInvalidID
 	}
 
-	avatars := []Avatar{}
-
 	const q = `with allp as (
-		SELECT a.username,
+		SELECT 
+		a.id,
+		a.username,
 		a.user_id,
 		p.followers,
 		p.following,
@@ -201,13 +208,17 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 		p.likes,
 		p.bio,
 		row_number() over (
-			partition by a.user_id ,
+			partition by 
+			a.id,
+			a.user_id ,
 			a.username order by p.created_at desc,
 			p.id desc) as priority_number from 
 			avatars a LEFT JOIN profiles p ON
 			a.id = p.avatar_id WHERE a.user_id=$1
 			) 
-			select allp.username,
+			select 
+			allp.id,
+			allp.username,
 			allp.user_id,
 			allp.followers,
 			allp.following,
@@ -216,5 +227,11 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 			allp.likes,
 			allp.bio from allp where priority_number = 1;
 	`
+	avatars := []Avatar{}
+
+	if err := db.SelectContext(ctx, &avatars, q, userID); err != nil {
+		return nil, errors.Wrap(err, "selecting avatars")
+	}
+
 	return avatars, nil
 }
