@@ -4,9 +4,11 @@ go 1.14
 
 require (
 	github.com/dghubble/go-twitter v0.0.0-20200725221434-4bc8ad7ad1b4
+	github.com/dimiro1/darwin v0.0.0-20191008194338-370f81775d3b
 	github.com/go-chi/chi v4.1.2+incompatible
 	github.com/go-chi/render v1.0.1
 	github.com/gofrs/uuid v3.3.0+incompatible
+	github.com/google/go-cmp v0.5.1
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/mux v1.7.4
 	github.com/jmoiron/sqlx v1.2.0
