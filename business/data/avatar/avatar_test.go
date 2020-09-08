@@ -90,7 +90,7 @@ func TestAvatar(t *testing.T) {
 			if saved.Username != *updA.Username {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to see updated Username field : got %q want %q.", tests.Failed, testID, saved.Username, *updA.Username)
 			} else {
-				t.Logf("\t%s\tTest %d:\tShould be albe to see updated Username field.", tests.Success, testID)
+				t.Logf("\t%s\tTest %d:\tShould be able to see updated Username field.", tests.Success, testID)
 			}
 
 			if err := avatar.Delete(ctx, db, a.ID, now); err != nil {
