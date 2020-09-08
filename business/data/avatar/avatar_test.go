@@ -46,6 +46,15 @@ func TestAvatar(t *testing.T) {
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to create an Avatar : %s.", tests.Failed, testID, err)
 			}
+
+			na2 := avatar.NewAvatar{
+				Username: "the_basebandit",
+			}
+
+			if _, err := avatar.Create(ctx, db, na2, now); err != nil {
+				t.Fatalf("\t%s\tTest %d:\tShould be able to create an Avatar : %s.", tests.Failed, testID, err)
+			}
+
 			t.Logf("\t%s\tTest %d:\tShould be able to create an Avatar.", tests.Success, testID)
 
 			saved, err := avatar.GetByID(ctx, db, a.ID)
@@ -87,6 +96,12 @@ func TestAvatar(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould get back the same Avatar.", tests.Success, testID)
 
+			if _, err := avatar.GetByUserID(ctx, db, u.ID); err != nil {
+				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve avatars assigned to the given user : %s.", tests.Failed, testID, err)
+			}
+
+			t.Logf("\t%s\tTest %d:\tShould be able to retrieve avatars assigned to the given user.", tests.Success, testID)
+
 			updA = avatar.UpdateAvatar{
 				Username: tests.StringPointer("Lure_Strings"),
 			}
@@ -108,8 +123,13 @@ func TestAvatar(t *testing.T) {
 				t.Logf("\t%s\tTest %d:\tShould be able to see updated Username field.", tests.Success, testID)
 			}
 
+			if _, err := avatar.Get(ctx, db); err != nil {
+				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve all avatars : %s.", tests.Failed, testID, err)
+			}
+			t.Logf("\t%s\tTest %d:\tShould be able to retrieve all avatars.", tests.Success, testID)
+
 			if err := avatar.Delete(ctx, db, a.ID, now); err != nil {
-				t.Fatalf("\t%s\t %d:\tShould be able to delete Avatar : %s.", tests.Failed, testID, err)
+				t.Fatalf("\t%s\tTest %d:\tShould be able to delete Avatar : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to delete Avatar.", tests.Success, testID)
 
