@@ -18,7 +18,7 @@ func TestAvatar(t *testing.T) {
 	t.Log("Given the need to work with Avatar records.")
 	{
 		testID := 0
-		testUserID := "45b5fbd3-755f-4379-8f07-a58d4a30fa2f"
+		// testUserID := "45b5fbd3-755f-4379-8f07-a58d4a30fa2f"
 		t.Logf("\tTest %d:\tWhen handling a single Avatar.", testID)
 		{
 			na := avatar.NewAvatar{
@@ -38,7 +38,7 @@ func TestAvatar(t *testing.T) {
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve an Avatar by ID: %s.", tests.Failed, testID, err)
 			}
-			t.Logf("\t%s\tTest %d:\tShould be able to retrieve an Avatar by ID: %s.", tests.Success, testID)
+			t.Logf("\t%s\tTest %d:\tShould be able to retrieve an Avatar by ID.", tests.Success, testID)
 
 			if diff := cmp.Diff(a, saved); diff != "" {
 				t.Fatalf("\t%s\tTest %d:\tShould get back the same Avatar.Diff:\n%s", tests.Failed, testID, diff)
@@ -93,12 +93,12 @@ func TestAvatar(t *testing.T) {
 				t.Logf("\t%s\tTest %d:\tShould be albe to see updated Username field.", tests.Success, testID)
 			}
 
-			if err := avatar.Delete(ctx, db, a.ID); err != nil {
+			if err := avatar.Delete(ctx, db, a.ID, now); err != nil {
 				t.Fatalf("\t%s\t %d:\tShould be able to delete Avatar : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%sTest %d:\tShould be able to delete Avatar.", tests.Success, testID)
 
-			_, err := avatar.GetByID(ctx, db, a.ID)
+			_, err = avatar.GetByID(ctx, db, a.ID)
 			if errors.Cause(err) != avatar.ErrNotFound {
 				t.Fatalf("\t%s\tTest %d:\tShould NOT be able to retrieve deleted Avatar : %s.", tests.Failed, testID, err)
 			}
