@@ -2,6 +2,7 @@ CREATE TABLE IF NOT EXISTS users (
   id UUID PRIMARY KEY,
   firstname TEXT,
   lastname TEXT,
+  active BOOLEAN DEFAULT TRUE,
   email TEXT UNIQUE,
   password_hash TEXT,
   created_at TIMESTAMP,
