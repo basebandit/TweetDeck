@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-//Avatar is a twitter account profile.
+//Avatar is a twitter account.
 type Avatar struct {
 	ID              string    `db:"id" json:"id"`                             //Unique Identifier.
 	UserID          *string   `db:"user_id" json:"user_id"`                   //The user who manages/runs this twitter account.
