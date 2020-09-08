@@ -77,6 +77,65 @@ func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now ti
 	return nil
 }
 
+//Delete removes the avatar identified by a given ID.
+func Delete(ctx context.Context, db *sqlx.DB, id string, now time.Time) error {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.delete")
+	defer span.End()
+
+	if _, err := uuid.Parse(id); err != nil {
+		return ErrInvalidID
+	}
+
+	const q = `UPDATE avatars SET
+	active = $2,
+	updated_at = $3
+	WHERE id = $1`
+
+	if _, err := db.ExecContext(ctx, q, id, false, now); err != nil {
+		return errors.Wrapf(err, "deleting avatar %s", id)
+	}
+
+	return nil
+}
+
+//Get retrieves all Avatars from the database.
+func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
+ctx,span := global.Tracer("avatarlysis").Start(ctx,"business.data.avatar.get")
+defer span.End()
+
+const q = `with allp as (
+	SELECT a.username,
+	a.user_id,
+	p.followers,
+	p.following,
+	p.tweets,
+	p.join_date,
+	p.likes,
+	p.bio,
+	row_number() over (
+		partition by a.user_id ,
+		a.username order by p.created_at desc,
+		p.id desc) as priority_number from 
+		avatars a LEFT JOIN profiles p ON
+		a.id = p.avatar_id
+		) 
+		select allp.username,
+		allp.user_id,
+		allp.followers,
+		allp.following,
+		allp.tweets,
+		allp.join_date,
+		allp.likes,
+		allp.bio from allp where priority_number = 1;`
+
+		avatars := []Avatar{}
+		if err := db.SelectContext(ctx,&avatars,q);err != nil{
+			return nil,errors.Wrap(err,"selecting avatars")
+		}
+
+		return avatars,nil
+}
+
 //GetByID finds the avatar identified by a given ID.
 func GetByID(ctx context.Context, db *sqlx.DB, id string) (Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getbyid")
@@ -135,7 +194,7 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 			a.username order by p.created_at desc,
 			p.id desc) as priority_number from 
 			avatars a LEFT JOIN profiles p ON
-			a.id = p.avatar_id WHERE a.user_id='45b5fbd3-755f-4379-8f07-a58d4a30fa2f'
+			a.id = p.avatar_id WHERE a.user_id=$1
 			) 
 			select allp.username,
 			allp.user_id,
