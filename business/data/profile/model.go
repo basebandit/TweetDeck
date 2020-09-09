@@ -21,4 +21,4 @@ type NewProfile struct {
 	UpdatedAt       time.Time `db:"updated_at" json:"updatedAt"` //Time this record was updated in the db
 }
 
-//Note we do not update twitter profiles in the database we insert new copies of the existing copies. Only the timestamps and unique IDs will differ, well along with other values but it is not a guarantee.
+//Note we do not update twitter profiles in the database we insert new records with probably different values but the same avatar_id. Only the timestamps and unique IDs will differ, well along with other values but it is not a guarantee.
