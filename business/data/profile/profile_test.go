@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/business/data/profile"
 
 	"ekraal.org/avatarlysis/business/data/avatar"
@@ -30,6 +31,7 @@ func TestProfile(t *testing.T) {
 			nu := user.NewUser{
 				Firstname:       "Evanson",
 				Lastname:        "Mwangi",
+				Roles:           []string{auth.RoleAdmin},
 				Password:        tests.StringPointer("gophers"),
 				PasswordConfirm: tests.StringPointer("gophers"),
 			}
