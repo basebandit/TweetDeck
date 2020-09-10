@@ -4,17 +4,17 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-//Seed runs queries to seed data to the db.The queries are ran in a 
+//Seed runs queries to seed data to the db.The queries are ran in a
 //transaction and rolled back if any fail.
-func Seed(db *sqlx.DB)error{
-	tx,err := db.Begin()
-	if err != nil{
+func Seed(db *sqlx.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
 		return err
 	}
 
-	if _,err := tx.Exec(seeds);err != nil{
-		if err := tx.Rollback();err != nil{
-return err
+	if _, err := tx.Exec(seeds); err != nil {
+		if err := tx.Rollback(); err != nil {
+			return err
 		}
 		return err
 	}
@@ -23,9 +23,9 @@ return err
 
 const seeds = `
 -- Create regular User with password "gophers"
-INSERT INTO users (id,firstname,lastname,email,password_hash,created_at,updated_at) VALUES 
-('5cf37266-3473-4006-984f-9325122678b7','test','user1','testuser1@gmail.com','$2a$10$1ggfMVZV6Js0ybvJufLRUOWHS5f6KneuP0XwwHpJ8L8ipdry9f2/a','2019-08-24 00:00:00', '2019-08-24 00:00:00'),
-('45b5fbd3-755f-4379-8f07-a58d4a30fa2f','test','user2','testuser2@gmail.com','$2a$10$9/XASPKBbJKVfCAZKDH.UuhsuALDr5vVm6VrYA9VFR8rccK86C1hW','2019-08-24 00:00:00', '2019-08-24 00:00:00')
+INSERT INTO users (id,firstname,lastname,email,roles,password_hash,created_at,updated_at) VALUES 
+('5cf37266-3473-4006-984f-9325122678b7','test','user1','testuser1@gmail.com','Admin gopher','$2a$10$1ggfMVZV6Js0ybvJufLRUOWHS5f6KneuP0XwwHpJ8L8ipdry9f2/a','2019-08-24 00:00:00', '2019-08-24 00:00:00'),
+('45b5fbd3-755f-4379-8f07-a58d4a30fa2f','test','user2','testuser2@gmail.com','User gopher','$2a$10$9/XASPKBbJKVfCAZKDH.UuhsuALDr5vVm6VrYA9VFR8rccK86C1hW','2019-08-24 00:00:00', '2019-08-24 00:00:00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO avatars(id,username,user_id,active,created_at,updated_at) VALUES 
@@ -42,20 +42,21 @@ VALUES
 ('6bd8a31c-6a58-46f0-8727-8b27b2360a90','84b8ff3e-85ec-4929-b045-b2e2d72eb4a7','Jean Wangari','Cuppycake\n\nLiving large',1284,1105,1361,3062,'https://pbs.twimg.com/profile_images/1288401307204804608/0s5DK5ej.jpg','2020-06-02 09:59:17','2020-08-22 18:55:03','1267757177999101953','2019-09-02 00:00:03.000001+00','2019-09-02 00:00:03.000001+00')
 ON CONFLICT DO NOTHING;
 `
+
 //DeleteAll runs the set of drop down queries against the db. The queries are ran in a
 //transaction and rolled back if any fail.
-func DeleteAll(db *sqlx.DB)error{
- tx,err := db.Begin()
- if err != nil{
-	 return err
- }
+func DeleteAll(db *sqlx.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
 
- if _,err := tx.Exec(deleteAll);err != nil{
-	 if err := tx.Rollback();err != nil{
-		 return err
-	 }
- }
- return tx.Commit()
+	if _, err := tx.Exec(deleteAll); err != nil {
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
 }
 
 //queries to clean the database between the tests.
