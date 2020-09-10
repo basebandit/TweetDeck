@@ -6,11 +6,13 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 
 	"ekraal.org/avatarlysis/api"
-	"ekraal.org/avatarlysis/database"
+	"ekraal.org/avatarlysis/foundation/database"
 
 	"github.com/go-chi/chi"
+	"github.com/pkg/errors"
 )
 
 type Config struct {
@@ -19,29 +21,49 @@ type Config struct {
 	TwitterAccessToken    string
 	TwitterAccessSecret   string
 	TwitterTokenURL       string
+	DatabaseUser          string
+	DatabasePassword      string
+	DatabaseName          string
+	DatabaseHost          string
+	DatabaseDisableTLS    bool
 }
 
 func init() {
 	//Lets confirm that all env vars are set
-	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" {
+	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" || os.Getenv("AVATARLYSIS_DB_USER") == "" || os.Getenv("AVATARLYSIS_DB_PASSWORD") == "" || os.Getenv("AVATARLYSIS_DB_NAME") == "" || os.Getenv("AVATARLYSIS_DB_HOST") == "" || os.Getenv("AVATARLYSIS_DB_DISABLE_TLS") == "" {
 		log.Fatal("there is a missing config field")
 	}
 }
 
 func main() {
+
+	log := log.New(os.Stdout, "AVATARLYSIS : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+
 	ctx := context.Background()
 
-	db, err := database.Connect(ctx, "localhost:27017", "avatar", "avatar", "avatars")
+	cfg := env()
+
+	db, err := database.Open(database.Config{
+		User:       cfg.DatabaseUser,
+		Password:   cfg.DatabasePassword,
+		Host:       cfg.DatabaseHost,
+		Name:       cfg.DatabaseName,
+		DisableTLS: cfg.DatabaseDisableTLS,
+	})
 
 	if err != nil {
-		log.Println("main: error:", err)
+		log.Printf("main: %s", errors.Wrap(err, "connecting to db"))
 		os.Exit(1)
 	}
-	log := log.New(os.Stdout, "AVATARLYSIS : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+
+	defer func() {
+		log.Printf("main: Database Stopping : %s", cfg.DatabaseHost)
+		db.Close()
+	}()
 
 	router := chi.NewRouter()
 
-	api := api.NewServer(db, log, router)
+	api := api.NewServer(ctx, db, log, router)
 
 	srv := http.Server{
 		Addr:    ":8880",
@@ -70,7 +92,7 @@ func main() {
 // func twitterLookUp() {
 // 	fmt.Println("Hello")
 
-// 	cfg := env()
+// cfg := env()
 
 // 	config := &clientcredentials.Config{
 // 		ClientID:     cfg.TwitterConsumerKey,
@@ -105,15 +127,27 @@ func main() {
 // 	fmt.Printf("USER LOOKUP:\n%+v\n", users)
 // }
 
-// func env() *Config {
+func env() *Config {
 
-// 	cfg := Config{
-// 		TwitterAccessSecret:   os.Getenv("CONSUMER_SECRET"),
-// 		TwitterAccessToken:    os.Getenv("ACCESS_TOKEN"),
-// 		TwitterConsumerKey:    os.Getenv("CONSUMER_KEY"),
-// 		TwitterConsumerSecret: os.Getenv("CONSUMER_SECRET"),
-// 		TwitterTokenURL:       os.Getenv("TOKEN_URL"),
-// 	}
+	tls, err := strconv.ParseBool(os.Getenv("AVATARLYSIS_DB_DISABLE_TLS"))
 
-// 	return &cfg
-// }
+	if err != nil {
+		log.Printf("env: %s", errors.Wrap(err, "parsing DisableTLS environment config"))
+		os.Exit(1)
+	}
+
+	cfg := Config{
+		TwitterAccessSecret:   os.Getenv("CONSUMER_SECRET"),
+		TwitterAccessToken:    os.Getenv("ACCESS_TOKEN"),
+		TwitterConsumerKey:    os.Getenv("CONSUMER_KEY"),
+		TwitterConsumerSecret: os.Getenv("CONSUMER_SECRET"),
+		TwitterTokenURL:       os.Getenv("TOKEN_URL"),
+		DatabaseUser:          os.Getenv("AVATARLYSIS_DB_USER"),
+		DatabasePassword:      os.Getenv("AVATARLYSIS_DB_PASSWORD"),
+		DatabaseName:          os.Getenv("AVATARLYSIS_DB_NAME"),
+		DatabaseHost:          os.Getenv("AVATARLYSIS_DB_HOST"),
+		DatabaseDisableTLS:    tls,
+	}
+
+	return &cfg
+}
