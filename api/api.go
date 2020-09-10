@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"ekraal.org/avatarlysis/business/data/auth"
 	"github.com/go-chi/chi"
 	"github.com/jmoiron/sqlx"
 	"go.opentelemetry.io/otel/api/global"
@@ -17,10 +18,11 @@ type Server struct {
 	db     *sqlx.DB
 	log    *log.Logger
 	router *chi.Mux
+	auth   *auth.Auth
 }
 
 //NewServer boostraps the api server and returns an initialized instance.
-func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, router *chi.Mux) *Server {
+func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, auth *auth.Auth, router *chi.Mux) *Server {
 	// Start or expand a distributed trace.
 	apiCtx, span := global.Tracer("service").Start(ctx, "api.server")
 	defer span.End()
@@ -38,6 +40,7 @@ func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, router *chi.Mu
 		db:     db,
 		log:    log,
 		router: router,
+		auth:   auth,
 	}
 
 	s.routes() //register handlers
