@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"time"
 
+	"ekraal.org/avatarlysis/business/data/auth"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"
@@ -23,6 +25,9 @@ var (
 	//ErrAuthenticationFailure occurs when a user attempts to authenticate but
 	//something goes wrong.
 	ErrAuthenticationFailure = errors.New("authentication failed")
+
+	// ErrForbidden occurs when a user tries to do something that is forbidden to them according to our access control policies.
+	ErrForbidden = errors.New("attempted action is not allowed")
 )
 
 //Create inserts a new user into the database.
@@ -47,30 +52,30 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, 
 	u.ID = uuid.New().String()
 	u.Firstname = nu.Firstname
 	u.Lastname = nu.Lastname
+	u.Roles = nu.Roles
 	u.Active = true
 	u.CreatedAt = now
 	u.UpdatedAt = now
 
 	const q = `INSERT INTO users
-	(id,firstname,lastname,email,password_hash,active,created_at,updated_at)
-	VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`
+	(id,firstname,lastname,email,password_hash,roles,active,created_at,updated_at)
+	VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`
 
-	if _, err := db.ExecContext(ctx, q, u.ID, u.Firstname, u.Lastname, u.Email, u.PasswordHash, u.Active, u.CreatedAt, u.UpdatedAt); err != nil {
+	if _, err := db.ExecContext(ctx, q, u.ID, u.Firstname, u.Lastname, u.Email, u.PasswordHash, u.Roles, u.Active, u.CreatedAt, u.UpdatedAt); err != nil {
 		return User{}, errors.Wrap(err, "inserting user")
 	}
 	return u, nil
 }
 
 //Update replaces an existing user record in the database.
-func Update(ctx context.Context, db *sqlx.DB, userID string, uu UpdateUser, now time.Time) error {
+func Update(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string, uu UpdateUser, now time.Time) error {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.user.update")
 	defer span.End()
 
-	if _, err := uuid.Parse(userID); err != nil {
-		return ErrInvalidID
+	u, err := GetByID(ctx, claims, db, userID)
+	if err != nil {
+		return err
 	}
-
-	var u User
 
 	if uu.Firstname != nil {
 		u.Firstname = *uu.Firstname
@@ -93,6 +98,7 @@ func Update(ctx context.Context, db *sqlx.DB, userID string, uu UpdateUser, now 
 
 	u.UpdatedAt = now
 
+	//TODO: Update user role field.
 	const q = `UPDATE users SET
 	 "firstname" = $2,
 	 "lastname" = $3,
@@ -148,7 +154,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]User, error) {
 }
 
 //GetByID retrieves the specified user from the database.
-func GetByID(ctx context.Context, db *sqlx.DB, userID string) (User, error) {
+func GetByID(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string) (User, error) {
 	ctx, span := global.Tracer("avartalysis").Start(ctx, "business.data.user.getbyid")
 	defer span.End()
 
@@ -156,6 +162,9 @@ func GetByID(ctx context.Context, db *sqlx.DB, userID string) (User, error) {
 		return User{}, ErrInvalidID
 	}
 
+	if !claims.HasRole(auth.RoleAdmin) && claims.Subject != userID {
+		return User{}, ErrForbidden
+	}
 	const q = `SELECT * FROM users WHERE id = $1 AND active = TRUE`
 
 	var u User
@@ -168,8 +177,9 @@ func GetByID(ctx context.Context, db *sqlx.DB, userID string) (User, error) {
 	return u, nil
 }
 
-//Authenticate finds a user by their email and verifies their password against the stored hash.On success it returns nil otherwise it returns the error.
-func Authenticate(ctx context.Context, db *sqlx.DB, email, password string) error {
+//Authenticate finds a user by their email and verifies their password against the stored hash.On success it returns a Claims value representing this user. The claims can be
+// used to generate a token for future authentication. otherwise it returns the error.
+func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, password string) (auth.Claims, error) {
 	ctx, span := global.Tracer("avartalysis").Start(ctx, "business.data.user.authenticate")
 	defer span.End()
 
@@ -178,14 +188,27 @@ func Authenticate(ctx context.Context, db *sqlx.DB, email, password string) erro
 	var u User
 	if err := db.GetContext(ctx, &u, q, email); err != nil {
 		if err == sql.ErrNoRows {
-			return ErrAuthenticationFailure
+			return auth.Claims{}, ErrAuthenticationFailure
 		}
-		return errors.Wrapf(err, "selecting single user email %s", email)
+		return auth.Claims{}, errors.Wrapf(err, "selecting single user email %s", email)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(u.PasswordHash, []byte(password)); err != nil {
-		return ErrAuthenticationFailure
+		return auth.Claims{}, ErrAuthenticationFailure
 	}
 
-	return nil
+	// If we are this far the request is valid. Create some claims for the user
+	// and generate their token.
+	claims := auth.Claims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    "avatarlysis",
+			Subject:   u.ID,
+			Audience:  "clients",
+			ExpiresAt: now.Add(time.Hour).Unix(),
+			IssuedAt:  now.Unix(),
+		},
+		Roles: u.Roles,
+	}
+
+	return claims, nil
 }
