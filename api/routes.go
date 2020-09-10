@@ -5,15 +5,20 @@ const (
 	avatarUpload = "/api/avatar/upload"
 
 	signup = "/api/signup"
-	login  = "/api/login"
+	login  = "/api/token"
 	ping   = "/api/ping"
 )
 
 func (s *Server) routes() {
+	logger := Logger(s.ctx, s.log)
+
+	//middlewares
+	s.router.Use(logger)
+
 	//Auth
 	s.router.Post(signup, s.handleSignup)
 	s.router.Get(ping, s.handlePing)
-	// s.router.Post(login, s.handleLogin)
+	s.router.Get(login, s.handleToken)
 	//Avatars
 	// s.router.Get(avatarPing, s.handleAvatarPing)
 	// s.router.Post(avatarUpload, s.handleAvatarUpload)
