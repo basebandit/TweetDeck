@@ -1,23 +1,40 @@
 package api
 
 import (
+	"context"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-chi/chi"
-	"go.mongodb.org/mongo-driver/mongo"
+	"github.com/jmoiron/sqlx"
+	"go.opentelemetry.io/otel/api/global"
 )
 
 //Server is the api server.Our dependencies hang off this struct.
 type Server struct {
-	db     *mongo.Database
+	ctx    context.Context
+	db     *sqlx.DB
 	log    *log.Logger
 	router *chi.Mux
 }
 
 //NewServer boostraps the api server and returns an initialized instance.
-func NewServer(db *mongo.Database, log *log.Logger, router *chi.Mux) *Server {
+func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, router *chi.Mux) *Server {
+	// Start or expand a distributed trace.
+	apiCtx, span := global.Tracer("service").Start(ctx, "api.server")
+	defer span.End()
+
+	// Set the context with the required values to
+	// process the request.
+	v := Values{
+		TraceID: span.SpanContext().TraceID.String(),
+		Now:     time.Now(),
+	}
+	apiCtx = context.WithValue(ctx, KeyValues, &v)
+
 	s := Server{
+		ctx:    apiCtx,
 		db:     db,
 		log:    log,
 		router: router,
@@ -26,6 +43,19 @@ func NewServer(db *mongo.Database, log *log.Logger, router *chi.Mux) *Server {
 	s.routes() //register handlers
 
 	return &s
+}
+
+// ctxKey represents the type of value for the context key.
+type ctxKey int
+
+// KeyValues is how request values are stored/retrieved.
+const KeyValues ctxKey = 1
+
+// Values represent state for each request.
+type Values struct {
+	TraceID    string
+	Now        time.Time
+	StatusCode int
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
