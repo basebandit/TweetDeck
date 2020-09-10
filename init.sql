@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS profiles (
  FOREIGN KEY(avatar_id) REFERENCES avatars(id) ON DELETE RESTRICT
 );
 
-INSERT INTO users (id,firstname,lastname,email,password_hash,created_at,updated_at) VALUES 
-('5cf37266-3473-4006-984f-9325122678b7','test','user1','testuser1@gmail.com','$2a$10$1ggfMVZV6Js0ybvJufLRUOWHS5f6KneuP0XwwHpJ8L8ipdry9f2/a','2019-08-24 00:00:00', '2019-08-24 00:00:00'),
-('45b5fbd3-755f-4379-8f07-a58d4a30fa2f','test','user2','testuser2@gmail.com','$2a$10$9/XASPKBbJKVfCAZKDH.UuhsuALDr5vVm6VrYA9VFR8rccK86C1hW','2019-08-24 00:00:00', '2019-08-24 00:00:00')
+INSERT INTO users (id,firstname,lastname,email,password_hash,roles,created_at,updated_at) VALUES 
+('5cf37266-3473-4006-984f-9325122678b7','test','user1','testuser1@gmail.com','$2a$10$1ggfMVZV6Js0ybvJufLRUOWHS5f6KneuP0XwwHpJ8L8ipdry9f2/a','{ADMIN}','2019-08-24 00:00:00', '2019-08-24 00:00:00'),
+('45b5fbd3-755f-4379-8f07-a58d4a30fa2f','test','user2','testuser2@gmail.com','$2a$10$9/XASPKBbJKVfCAZKDH.UuhsuALDr5vVm6VrYA9VFR8rccK86C1hW','{USER}','2019-08-24 00:00:00', '2019-08-24 00:00:00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO avatars(id,username,user_id,active,created_at,updated_at) VALUES 
