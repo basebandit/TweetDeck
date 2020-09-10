@@ -177,6 +177,23 @@ func GetByID(ctx context.Context, claims auth.Claims, db *sqlx.DB, userID string
 	return u, nil
 }
 
+//GetByEmail retrieves the specified user from the database using the given email
+func GetByEmail(ctx context.Context, db *sqlx.DB, email string) (User, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.user.getbyemail")
+	defer span.End()
+
+	const q = `SELECT * FROM users WHERE email = $1 AND active = TRUE`
+
+	var u User
+	if err := db.GetContext(ctx, &u, q, email); err != nil {
+		if err == sql.ErrNoRows {
+			return User{}, ErrNotFound
+		}
+		return User{}, errors.Wrapf(err, "selecting user %q", email)
+	}
+	return u, nil
+}
+
 //Authenticate finds a user by their email and verifies their password against the stored hash.On success it returns a Claims value representing this user. The claims can be
 // used to generate a token for future authentication. otherwise it returns the error.
 func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, password string) (auth.Claims, error) {
