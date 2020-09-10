@@ -4,8 +4,10 @@ import (
 	"testing"
 	"time"
 
+	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/business/data/schema"
 	"ekraal.org/avatarlysis/business/data/user"
+	"github.com/dgrijalva/jwt-go"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
@@ -27,6 +29,7 @@ func TestUser(t *testing.T) {
 			nu := user.NewUser{
 				Firstname:       "Evanson",
 				Lastname:        "Mwangi",
+				Roles:           []string{auth.RoleAdmin},
 				Password:        tests.StringPointer("gophers"),
 				PasswordConfirm: tests.StringPointer("gophers"),
 			}
@@ -42,7 +45,18 @@ func TestUser(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to create user.", tests.Success, testID)
 
-			savedU, err := user.GetByID(ctx, db, u.ID)
+			claims := auth.Claims{
+				StandardClaims: jwt.StandardClaims{
+					Issuer:    "avatarlysis",
+					Subject:   "718ffbea-f4a1-4667-8ae3-b349da52675e",
+					Audience:  "clients",
+					ExpiresAt: now.Add(time.Hour).Unix(),
+					IssuedAt:  now.Unix(),
+				},
+				Roles: []string{auth.RoleAdmin, auth.RoleUser},
+			}
+
+			savedU, err := user.GetByID(ctx, claims, db, u.ID)
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve user by ID: %s.", tests.Failed, testID, err)
 			}
@@ -59,12 +73,12 @@ func TestUser(t *testing.T) {
 				Email:     tests.StringPointer("parish@nsynclabs.com"),
 			}
 
-			if err := user.Update(ctx, db, u.ID, updU, now); err != nil {
+			if err := user.Update(ctx, claims, db, u.ID, updU, now); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to update user : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update user.", tests.Success, testID)
 
-			savedU, err = user.GetByID(ctx, db, u.ID)
+			savedU, err = user.GetByID(ctx, claims, db, u.ID)
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve user by ID: %s.", tests.Failed, testID, err)
 			}
@@ -99,7 +113,7 @@ func TestUser(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to delete user.", tests.Success, testID)
 
-			_, err = user.GetByID(ctx, db, u.ID)
+			_, err = user.GetByID(ctx, claims, db, u.ID)
 			if errors.Cause(err) != user.ErrNotFound {
 				t.Fatalf("\t%s\tTests %d:\tShould NOT be able to retrieve user : %s.", tests.Failed, testID, err)
 			}
@@ -122,6 +136,7 @@ func TestAuthenticate(t *testing.T) {
 			nu := user.NewUser{
 				Firstname:       "Adidja",
 				Lastname:        "Palmer",
+				Roles:           []string{auth.RoleAdmin},
 				Email:           tests.StringPointer("adi@worldboss.org"),
 				Password:        tests.StringPointer("goroutines"),
 				PasswordConfirm: tests.StringPointer("goroutines"),
@@ -134,16 +149,33 @@ func TestAuthenticate(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to delete all data.", tests.Success, testID)
 
-			_, err := user.Create(ctx, db, nu, now)
+			u, err := user.Create(ctx, db, nu, now)
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to create user : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to create user.", tests.Success, testID)
 
-			if err := user.Authenticate(ctx, db, "adi@worldboss.org", "goroutines"); err != nil {
+			claims, err := user.Authenticate(ctx, db, now, "adi@worldboss.org", "goroutines")
+			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to authenticate given password : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to authenticate given password.", tests.Success, testID)
+
+			want := auth.Claims{
+				Roles: u.Roles,
+				StandardClaims: jwt.StandardClaims{
+					Issuer:    "avatarlysis",
+					Subject:   u.ID,
+					Audience:  "clients",
+					ExpiresAt: now.Add(time.Hour).Unix(),
+					IssuedAt:  now.Unix(),
+				},
+			}
+
+			if diff := cmp.Diff(want, claims); diff != "" {
+				t.Fatalf("\t%s\tTest %d:\tShould get back the expected claims. Diff:\n%s", tests.Failed, testID, diff)
+			}
+			t.Logf("\t%s\tTest %d:\tShould get back the expected claims.", tests.Success, testID)
 		}
 	}
 }
