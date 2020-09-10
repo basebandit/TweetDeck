@@ -50,6 +50,16 @@ func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
+// ErrBadRequest returns status 400 Bad Request including error message.
+func ErrBadRequest(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusBadRequest,
+		StatusText:     http.StatusText(http.StatusBadRequest),
+		ErrorText:      err.Error(),
+	}
+}
+
 // ErrInvalidRequest returns status 422 Unprocessable Entity including error message.
 func ErrInvalidRequest(err error) render.Renderer {
 	return &ErrResponse{
@@ -86,6 +96,16 @@ func ErrUnauthorized(err error) render.Renderer {
 		Err:            err,
 		HTTPStatusCode: http.StatusUnauthorized,
 		StatusText:     http.StatusText(http.StatusUnauthorized),
+		ErrorText:      err.Error(),
+	}
+}
+
+//ErrForbiddenWithError renders status 403 Forbidden with custom error message.
+func ErrForbiddenWithError(err error) render.Renderer {
+	return &ErrResponse{
+		Err:            err,
+		HTTPStatusCode: http.StatusForbidden,
+		StatusText:     http.StatusText(http.StatusForbidden),
 		ErrorText:      err.Error(),
 	}
 }
