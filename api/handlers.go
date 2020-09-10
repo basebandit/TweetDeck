@@ -61,7 +61,7 @@ const (
 // }
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
-	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.ping")
+	ctx, span := global.Tracer("avatarlysis").Start(r.Context(), "handlers.ping")
 	defer span.End()
 
 	_, ok := ctx.Value(KeyValues).(*Values)
@@ -75,7 +75,7 @@ func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
-	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.signup")
+	ctx, span := global.Tracer("avatarlysis").Start(r.Context(), "handlers.signup")
 	defer span.End()
 
 	v, ok := ctx.Value(KeyValues).(*Values)
@@ -87,7 +87,7 @@ func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	var nu user.NewUser
 	if err := json.NewDecoder(r.Body).Decode(&nu); err != nil {
-		s.log.Println(errors.Wrapf(err, "Signup: decoding user"))
+		s.log.Println(errors.Wrap(err, "Signup: decoding user"))
 		render.Render(w, r, ErrBadRequest(err))
 		return
 	}
@@ -108,6 +108,51 @@ func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Respond(w, r, usr)
+}
+
+func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.login")
+	defer span.End()
+
+	v, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	email, pass, ok := r.BasicAuth()
+	if !ok {
+		err := errors.New("must provide email and password in Basic auth")
+		render.Render(w, r, ErrUnauthorized(err))
+		return
+	}
+
+	claims, err := user.Authenticate(ctx, s.db, v.Now, email, pass)
+	if err != nil {
+		switch err {
+		case user.ErrAuthenticationFailure:
+			render.Render(w, r, ErrUnauthorized(err))
+			return
+		default:
+			err := errors.Wrap(err, "authenticating")
+			s.log.Println(err)
+			render.Render(w, r, ErrInternalServerError)
+			return
+		}
+	}
+
+	var tkn struct {
+		Token string `json:"token"`
+	}
+	tkn.Token, err = s.auth.GenerateToken(claims)
+	if err != nil {
+		err := errors.Wrap(err, "generating token")
+		s.log.Println(err)
+		render.Render(w, r, ErrInternalServerError)
+	}
+
+	render.Respond(w, r, tkn)
 }
 
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
