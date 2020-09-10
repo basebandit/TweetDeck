@@ -78,6 +78,12 @@ func TestUser(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update user.", tests.Success, testID)
 
+			savedU, err = user.GetByEmail(ctx, db, *updU.Email)
+			if err != nil {
+				t.Fatalf("\t%s\tTest %d\tShould be able to retrieve user by email: %s", tests.Failed, testID, err)
+			}
+			t.Logf("\t%s\tTest: %d\tShould be able to retrieve user by email.", tests.Success, testID)
+
 			savedU, err = user.GetByID(ctx, claims, db, u.ID)
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve user by ID: %s.", tests.Failed, testID, err)
