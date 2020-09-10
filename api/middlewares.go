@@ -3,21 +3,42 @@ package api
 import (
 	"context"
 	"errors"
-	"fmt"
+	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"ekraal.org/avatarlysis/business/data/auth"
 	"github.com/go-chi/render"
 	"go.opentelemetry.io/otel/api/global"
 )
 
-func logger(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Println("Before")
-		h.ServeHTTP(w, r) //call original
-		fmt.Println("After")
-	})
+//Logger writes some information about the request to the logs in the
+//format: TraceID : (200) GET /foo -> IP ADDR (latency)
+func Logger(ctx context.Context, log *log.Logger) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		hfn := func(w http.ResponseWriter, r *http.Request) {
+			ctx, span := global.Tracer("avatarlysis").Start(ctx, "api.middlewares.logger")
+			defer span.End()
+
+			v, ok := ctx.Value(KeyValues).(*Values)
+			if !ok {
+				err := errors.New("web value missing from context")
+				log.Printf("logger: %s", err)
+				render.Render(w, r, ErrInternalServerError)
+				return
+			}
+
+			log.Printf("%s : (%d) : %s %s -> %s (%s)",
+				v.TraceID, v.StatusCode,
+				r.Method, r.URL.Path,
+				r.RemoteAddr, time.Since(v.Now),
+			)
+
+			next.ServeHTTP(w, r)
+		}
+		return http.HandlerFunc(hfn)
+	}
 }
 
 //Authenticate validates a JWT from the `Authorization` header.
