@@ -24,6 +24,7 @@ var migrations = []darwin.Migration{
 			lastname TEXT,
 			active BOOLEAN DEFAULT TRUE,
 			email TEXT UNIQUE,
+			roles TEXT[],
 			password_hash TEXT,
 			created_at TIMESTAMP,
 			updated_at TIMESTAMP
