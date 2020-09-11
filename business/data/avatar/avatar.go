@@ -3,6 +3,7 @@ package avatar
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"time"
 
@@ -42,6 +43,39 @@ func Create(ctx context.Context, db *sqlx.DB, na NewAvatar, now time.Time) (Avat
 	}
 
 	return a, nil
+}
+
+//CreateMultiple adds multiple Avatar records to the database with one query.It returns an error if not successful.
+func CreateMultiple(ctx context.Context, db *sqlx.DB, na []NewAvatar, now time.Time) error {
+
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.create")
+	defer span.End()
+
+	q := `INSERT INTO avatars 
+	(id,username,created_at,updated_at) VALUES `
+
+	insertParams := []interface{}{}
+
+	for i, av := range na {
+		p1 := i * 4
+		a := Avatar{
+			ID:        uuid.New().String(),
+			Username:  av.Username,
+			CreatedAt: now.UTC(),
+			UpdatedAt: now.UTC(),
+		}
+
+		q += fmt.Sprintf("($%d,$%d,$%d,$%d),", p1+1, p1+2, p1+3, p1+4)
+		insertParams = append(insertParams, a.ID, a.Username, a.CreatedAt, a.UpdatedAt)
+	}
+
+	q = q[:len(q)-1] //remove trailing ","
+
+	if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
+		return errors.Wrap(err, "inserting avatar")
+	}
+
+	return nil
 }
 
 //Update modifies data about an existing Avatar.It will error if the specified Id is

@@ -12,7 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS avatars (
   id UUID PRIMARY KEY,
-  username TEXT,
+  username TEXT UNIQUE,
   user_id UUID,
   active BOOLEAN,
  created_at TIMESTAMP,
@@ -46,9 +46,9 @@ INSERT INTO users (id,firstname,lastname,email,password_hash,roles,created_at,up
 ON CONFLICT DO NOTHING;
 
 INSERT INTO avatars(id,username,user_id,active,created_at,updated_at) VALUES 
-('a2b0639f-2cc6-44b8-b97b-15d69dbb511e','DKJnr3','45b5fbd3-755f-4379-8f07-a58d4a30fa2f',TRUE,'2019-01-01 00:00:01.000001+00','2019-01-01 00:00:01.000001+00'),
-('72f8b983-3eb4-48db-9ed0-e45cc6bd716b','FelistusQ','45b5fbd3-755f-4379-8f07-a58d4a30fa2f',TRUE,'2019-01-01 00:00:02.000001+00','2019-01-01 00:00:02.000001+00'),
-('84b8ff3e-85ec-4929-b045-b2e2d72eb4a7','jean_wangari','5cf37266-3473-4006-984f-9325122678b7',TRUE,'2019-01-05 00:00:02.000001+00','2019-01-05 00:00:02.000001+00')
+('a2b0639f-2cc6-44b8-b97b-15d69dbb511e','DKSnr4','45b5fbd3-755f-4379-8f07-a58d4a30fa2f',TRUE,'2019-01-01 00:00:01.000001+00','2019-01-01 00:00:01.000001+00'),
+('72f8b983-3eb4-48db-9ed0-e45cc6bd716b','FelistusJ','45b5fbd3-755f-4379-8f07-a58d4a30fa2f',TRUE,'2019-01-01 00:00:02.000001+00','2019-01-01 00:00:02.000001+00'),
+('84b8ff3e-85ec-4929-b045-b2e2d72eb4a7','jean_waithera','5cf37266-3473-4006-984f-9325122678b7',TRUE,'2019-01-05 00:00:02.000001+00','2019-01-05 00:00:02.000001+00')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO profiles(id,avatar_id,"name",bio,followers,tweets,"following",likes,profile_image_url,join_date,last_tweet_time,twitter_id,created_at,updated_at)
