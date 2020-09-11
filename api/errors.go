@@ -25,6 +25,9 @@ var ErrNoSuchAccount = errors.New("no such account")
 //ErrEmailTaken an already registered email.
 var ErrEmailTaken = errors.New("that email is taken")
 
+//ErrUsernameTaken an already registered username.
+var ErrUsernameTaken = errors.New("that username already exists")
+
 //ErrLoginToken an invalid or expired token
 var ErrLoginToken = errors.New("invalid or expired login token")
 
