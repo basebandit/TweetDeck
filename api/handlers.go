@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 
+	"ekraal.org/avatarlysis/business/data/avatar"
+
 	"go.opentelemetry.io/otel/api/global"
 
 	"net/http"
@@ -153,6 +155,55 @@ func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, tkn)
+}
+
+func (s *Server) handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.avatarupload")
+	defer span.End()
+
+	v, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	file, _, err := r.FormFile("avatars")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+	usernames, err := readFile(file)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	var na avatar.NewAvatar
+	var nas []avatar.NewAvatar
+
+	for _, username := range usernames {
+		na.Username = username
+		nas = append(nas, na)
+	}
+
+	if err := avatar.CreateMultiple(ctx, s.db, nas, v.Now); err != nil {
+		if pqErr, ok := errors.Cause(err).(*pq.Error); ok {
+			if pqErr.Code == pq.ErrorCode("23505") {
+				s.log.Println(err)
+				render.Render(w, r, ErrDuplicateField(ErrUsernameTaken))
+				return
+			}
+		}
+		s.log.Println(err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, http.NoBody)
 }
 
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
