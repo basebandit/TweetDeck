@@ -200,6 +200,7 @@ func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, passwo
 	ctx, span := global.Tracer("avartalysis").Start(ctx, "business.data.user.authenticate")
 	defer span.End()
 
+	//TODO:check also if the user is still active. (AND active = true)
 	const q = `SELECT * FROM users WHERE email = $1`
 
 	var u User
