@@ -48,7 +48,7 @@ func Create(ctx context.Context, db *sqlx.DB, na NewAvatar, now time.Time) (Avat
 //CreateMultiple adds multiple Avatar records to the database with one query.It returns an error if not successful.
 func CreateMultiple(ctx context.Context, db *sqlx.DB, na []NewAvatar, now time.Time) error {
 
-	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.create")
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.createmultiple")
 	defer span.End()
 
 	q := `INSERT INTO avatars 
@@ -72,7 +72,7 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, na []NewAvatar, now time.T
 	q = q[:len(q)-1] //remove trailing ","
 
 	if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
-		return errors.Wrap(err, "inserting avatar")
+		return errors.Wrap(err, "inserting multiple avatars")
 	}
 
 	return nil
@@ -181,6 +181,21 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 	avatars := []Avatar{}
 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
 		return nil, errors.Wrap(err, "selecting avatars")
+	}
+
+	return avatars, nil
+}
+
+//GetUsernames returns a map of usernames with their ids as key
+func GetUsernames(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getusernames")
+	defer span.End()
+
+	const q = `SELECT id,username from avatars`
+
+	avatars := []Avatar{}
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, errors.Wrap(err, "selecting usernames")
 	}
 
 	return avatars, nil
