@@ -19,7 +19,7 @@
           </v-list-item>
         </v-list>
       </v-menu>
-      <v-btn text color="grey">
+      <v-btn text color="grey" @click="signout">
         <span>Sign Out</span>
         <v-icon right>exit_to_app</v-icon>
       </v-btn>
@@ -65,6 +65,12 @@ export default {
         { icon: "mdi-account-group", text: "Team", route: "/team" },
       ],
     };
+  },
+  methods: {
+    signout() {
+      window.localStorage.removeItem("user");
+      this.$router.push({ name: "Login" });
+    },
   },
 };
 </script>
