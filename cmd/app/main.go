@@ -156,6 +156,7 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
 		np.Likes = intPointer(user.FavouritesCount)
 		np.Tweets = intPointer(user.StatusesCount)
 		np.ProfileImageURL = stringPointer(user.ProfileImageURLHttps)
+		np.Bio = stringPointer(user.Description)
 		np.TwitterID = stringPointer(user.IDStr)
 		np.JoinDate = stringPointer(user.CreatedAt)
 		ltt, err := twitter.UserTimeline(user.ID)
