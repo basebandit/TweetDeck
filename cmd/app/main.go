@@ -10,6 +10,13 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
+
+	"ekraal.org/avatarlysis/business/data/profile"
+
+	service "ekraal.org/avatarlysis/service/twitter"
+
+	"ekraal.org/avatarlysis/business/data/avatar"
 
 	"ekraal.org/avatarlysis/api"
 	"ekraal.org/avatarlysis/business/data/auth"
@@ -17,6 +24,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
+	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -89,6 +97,10 @@ func main() {
 		Handler: api,
 	}
 
+	go func(ctx context.Context, db *sqlx.DB, cfg *Config) {
+		twitterLookup(ctx, db, cfg)
+	}(ctx, db, cfg)
+
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			panic(err)
@@ -106,6 +118,76 @@ func main() {
 	}
 
 	log.Println("Avatarlysis API server stopped gracefully")
+}
+
+func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
+	avs, err := avatar.GetUsernames(ctx, db)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	dict := map[string]string{}
+	for _, av := range avs {
+		dict[av.Username] = av.ID
+	}
+
+	twitter := service.NewTwitter(cfg.TwitterConsumerKey, cfg.TwitterConsumerSecret, cfg.TwitterAccessToken, cfg.TwitterTokenURL)
+
+	var unames []string
+
+	for _, av := range avs {
+		unames = append(unames, av.Username)
+	}
+
+	users, err := twitter.Lookup(unames)
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+	var np profile.NewProfile
+	var nps []profile.NewProfile
+	for _, user := range users {
+		np.AvatarID = stringPointer(dict[user.ScreenName])
+		np.Name = stringPointer(user.Name)
+		np.Followers = intPointer(user.FollowersCount)
+		np.Following = intPointer(user.FriendsCount)
+		np.Likes = intPointer(user.FavouritesCount)
+		np.Tweets = intPointer(user.StatusesCount)
+		np.ProfileImageURL = stringPointer(user.ProfileImageURLHttps)
+		np.TwitterID = stringPointer(user.IDStr)
+		np.JoinDate = stringPointer(user.CreatedAt)
+		ltt, err := twitter.UserTimeline(user.ID)
+		if err != nil {
+			fmt.Println(err)
+			continue
+		}
+		if len(ltt) > 0 {
+			np.LastTweetTime = stringPointer(ltt[0].CreatedAt)
+		}
+
+		nps = append(nps, np)
+	}
+
+	fmt.Println(nps)
+	if err := profile.CreateMultiple(ctx, db, nps, time.Now()); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+
+}
+
+func stringPointer(val string) *string {
+	str := val
+
+	return &str
+}
+
+func intPointer(val int) *int {
+	i := val
+
+	return &i
 }
 
 func authSetup(cfg *Config) (*auth.Auth, error) {
