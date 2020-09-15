@@ -155,6 +155,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 	p.followers,
 	p.following,
 	p.tweets,
+	p.profile_image_url,
 	p.join_date,
 	p.likes,
 	p.bio,
@@ -174,6 +175,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 		allp.followers,
 		allp.following,
 		allp.tweets,
+		allp.profile_image_url,
 		allp.join_date,
 		allp.likes,
 		allp.bio from allp where priority_number = 1;`
@@ -252,6 +254,7 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 		a.user_id,
 		p.followers,
 		p.following,
+		p.profile_image_url,
 		p.tweets,
 		p.join_date,
 		p.likes,
@@ -272,6 +275,7 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 			allp.followers,
 			allp.following,
 			allp.tweets,
+			allp.profile_image_url,
 			allp.join_date,
 			allp.likes,
 			allp.bio from allp where priority_number = 1;
