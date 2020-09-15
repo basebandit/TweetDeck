@@ -51,11 +51,9 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 
 	for i, p := range np {
 		p1 := i * 14
-		p.ID = uuid.New().String()
-		p.CreatedAt = now.UTC()
-		p.UpdatedAt = now.UTC()
 
 		q += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),", p1+1, p1+2, p1+3, p1+4, p1+5, p1+6, p1+7, p1+8, p1+9, p1+10, p1+11, p1+12, p1+13, p1+14)
+
 		insertParams = append(insertParams, p.ID, *p.AvatarID, *p.Followers, *p.Following, *p.Tweets, *p.Likes, *p.Bio, *p.Name, *p.TwitterID, *p.ProfileImageURL, *p.LastTweetTime, *p.JoinDate, p.CreatedAt, p.UpdatedAt)
 	}
 
