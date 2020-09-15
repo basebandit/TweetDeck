@@ -1,8 +1,12 @@
 package service
 
 import (
+	"context"
+	"log"
+
 	"github.com/dghubble/go-twitter/twitter"
 	"github.com/pkg/errors"
+	"go.opentelemetry.io/otel/api/global"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/clientcredentials"
 )
@@ -28,17 +32,24 @@ func NewTwitter(key, secret, token, url string) *TwitterService {
 }
 
 //Lookup fetches the profiles of the given username(s)
-func (t *TwitterService) Lookup(usernames []string) ([]twitter.User, error) {
+func (t *TwitterService) Lookup(ctx context.Context, l *log.Logger, usernames []string) ([]twitter.User, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "foundation.service.twitter.lookup")
+	defer span.End()
+
 	client := t.client()
 
 	userLookupParams := &twitter.UserLookupParams{
 		ScreenName: usernames,
 	}
+
+	log.Println("twitter lookup started")
+
 	users, _, err := client.Users.Lookup(userLookupParams)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching twitter profiles")
 	}
 
+	log.Println("twitter lookup finished successful")
 	return users, nil
 }
 
