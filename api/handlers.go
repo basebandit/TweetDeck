@@ -206,6 +206,27 @@ func (s *Server) handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, http.NoBody)
 }
 
+func (s *Server) handleAvatars(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.avatars")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	a, err := avatar.Get(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Respond(w, r, a)
+}
+
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 // 	loginRequest := struct {
 // 		Email    string `json:"email"`
