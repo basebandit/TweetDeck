@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"time"
 
 	"ekraal.org/avatarlysis/business/data/profile"
@@ -168,7 +169,8 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logge
 		np.Following = intPointer(user.FriendsCount)
 		np.Likes = intPointer(user.FavouritesCount)
 		np.Tweets = intPointer(user.StatusesCount)
-		np.ProfileImageURL = stringPointer(user.ProfileImageURLHttps)
+
+		np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
 		np.Bio = stringPointer(user.Description)
 		np.TwitterID = stringPointer(user.IDStr)
 		np.JoinDate = stringPointer(user.CreatedAt)
