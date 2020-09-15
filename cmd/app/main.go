@@ -13,8 +13,9 @@ import (
 	"time"
 
 	"ekraal.org/avatarlysis/business/data/profile"
+	"go.opentelemetry.io/otel/api/global"
 
-	service "ekraal.org/avatarlysis/service/twitter"
+	service "ekraal.org/avatarlysis/foundation/service/twitter"
 
 	"ekraal.org/avatarlysis/business/data/avatar"
 
@@ -24,10 +25,12 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
+//Config declares any external config that our service needs
 type Config struct {
 	TwitterConsumerKey    string
 	TwitterConsumerSecret string
@@ -53,7 +56,7 @@ func init() {
 
 func main() {
 
-	log := log.New(os.Stdout, "AVATARLYSIS : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
+	logger := log.New(os.Stdout, "AVATARLYSIS : ", log.LstdFlags|log.Lmicroseconds|log.Lshortfile)
 
 	ctx := context.Background()
 
@@ -68,38 +71,38 @@ func main() {
 	})
 
 	if err != nil {
-		log.Printf("main: %s", errors.Wrap(err, "connecting to db"))
+		logger.Printf("main: %s", errors.Wrap(err, "connecting to db"))
 		os.Exit(1)
 	}
 
 	if err := database.Ping(ctx, db); err != nil {
-		log.Printf("main: %s", errors.Wrap(err, "pinging db"))
+		logger.Printf("main: %s", errors.Wrap(err, "pinging db"))
 		os.Exit(1)
 	}
 
 	defer func() {
-		log.Printf("main: Database Stopping : %s", cfg.DatabaseHost)
+		logger.Printf("main: Database Stopping : %s", cfg.DatabaseHost)
 		db.Close()
 	}()
 
 	auth, err := authSetup(cfg)
 	if err != nil {
-		log.Printf("main: Auth setup failed : %s", err)
+		logger.Printf("main: Auth setup failed : %s", err)
 		os.Exit(1)
 	}
 
 	router := chi.NewRouter()
 
-	api := api.NewServer(ctx, db, log, auth, router)
+	api := api.NewServer(ctx, db, logger, auth, router)
 
 	srv := http.Server{
 		Addr:    ":8880",
 		Handler: api,
 	}
 
-	go func(ctx context.Context, db *sqlx.DB, cfg *Config) {
-		twitterLookup(ctx, db, cfg)
-	}(ctx, db, cfg)
+	go func(ctx context.Context, db *sqlx.DB, cfg *Config, l *log.Logger) {
+		twitterLookup(ctx, db, cfg, l)
+	}(ctx, db, cfg, logger)
 
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -120,11 +123,13 @@ func main() {
 	log.Println("Avatarlysis API server stopped gracefully")
 }
 
-func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
+func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logger) error {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "main.twitterlookup")
+	defer span.End()
+
 	avs, err := avatar.GetUsernames(ctx, db)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
 	dict := map[string]string{}
@@ -140,16 +145,24 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
 		unames = append(unames, av.Username)
 	}
 
-	users, err := twitter.Lookup(unames)
+	users, err := twitter.Lookup(ctx, log, unames)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
-
 	var np profile.NewProfile
 	var nps []profile.NewProfile
+	now := time.Now()
 	for _, user := range users {
-		np.AvatarID = stringPointer(dict[user.ScreenName])
+
+		np.ID = uuid.New().String()
+		np.CreatedAt = now
+		np.UpdatedAt = now
+		avatarID, ok := dict[user.ScreenName]
+		if !ok {
+			//lets skip to the next iteration
+			continue
+		}
+		np.AvatarID = stringPointer(avatarID)
 		np.Name = stringPointer(user.Name)
 		np.Followers = intPointer(user.FollowersCount)
 		np.Following = intPointer(user.FriendsCount)
@@ -161,7 +174,7 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
 		np.JoinDate = stringPointer(user.CreatedAt)
 		ltt, err := twitter.UserTimeline(user.ID)
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
 		if len(ltt) > 0 {
@@ -171,12 +184,11 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config) {
 		nps = append(nps, np)
 	}
 
-	fmt.Println(nps)
 	if err := profile.CreateMultiple(ctx, db, nps, time.Now()); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return err
 	}
 
+	return nil
 }
 
 func stringPointer(val string) *string {
@@ -217,44 +229,6 @@ func authSetup(cfg *Config) (*auth.Auth, error) {
 
 	return a, nil
 }
-
-// func twitterLookUp() {
-// 	fmt.Println("Hello")
-
-// cfg := env()
-
-// 	config := &clientcredentials.Config{
-// 		ClientID:     cfg.TwitterConsumerKey,
-// 		ClientSecret: cfg.TwitterConsumerSecret,
-// 		TokenURL:     cfg.TwitterTokenURL,
-// 	}
-
-// 	httpClient := config.Client(oauth2.NoContext)
-
-// 	client := twitter.NewClient(httpClient)
-
-// 	userLookupParams := &twitter.UserLookupParams{ScreenName: []string{
-// 		"OlandoWanda",
-// 		"TPS_Ke",
-// 		"EngKanyiri",
-// 		"FelistusQ",
-// 		"Otiisteve",
-// 		"SashaShazlin",
-// 		"Jean_Wangari",
-// 		"JoyceKamande9",
-// 		"Louiskandie",
-// 		"DKJnr3",
-// 	},
-// 	}
-
-// 	users, tres, err := client.Users.Lookup(userLookupParams)
-
-// 	if err != nil {
-// 		log.Fatalf("Your request failed with %v, error: %s", tres, err)
-// 	}
-
-// 	fmt.Printf("USER LOOKUP:\n%+v\n", users)
-// }
 
 func env() *Config {
 
