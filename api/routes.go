@@ -22,5 +22,6 @@ func (s *Server) routes() {
 	//Avatars
 	// s.router.Get(avatarPing, s.handleAvatarPing)
 	s.router.Post(avatarUpload, s.handleAvatarUpload)
+	s.router.Get(avatars, s.handleAvatars)
 	// s.router.Get(avatars, s.handleGetAvatar)
 }
