@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"database/sql"
+
 	"time"
 
 	"ekraal.org/avatarlysis/business/data/auth"
@@ -49,7 +50,7 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, 
 		u.Email = *nu.Email
 	}
 
-	u.ID = uuid.New().String()
+	u.ID = uuid.New()
 	u.Firstname = nu.Firstname
 	u.Lastname = nu.Lastname
 	u.Roles = nu.Roles
@@ -139,13 +140,13 @@ func Delete(ctx context.Context, db *sqlx.DB, userID string) error {
 }
 
 //Get retrieves a list of all existing user records from the database.
-func Get(ctx context.Context, db *sqlx.DB) ([]User, error) {
+func Get(ctx context.Context, db *sqlx.DB) ([]*User, error) {
 	ctx, span := global.Tracer("avartalysis").Start(ctx, "business.data.user.get")
 	defer span.End()
 
-	const q = `SELECT * FROM users WHERE active = TRUE`
+	const q = `SELECT * FROM users WHERE active = TRUE AND roles ='{USER}'`
 
-	users := []User{}
+	users := []*User{}
 	if err := db.SelectContext(ctx, &users, q); err != nil {
 		return nil, errors.Wrap(err, "selecting users")
 	}
@@ -220,7 +221,7 @@ func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, passwo
 	claims := auth.Claims{
 		StandardClaims: jwt.StandardClaims{
 			Issuer:    "avatarlysis",
-			Subject:   u.ID,
+			Subject:   u.ID.String(),
 			Audience:  "clients",
 			ExpiresAt: now.Add(time.Hour).Unix(),
 			IssuedAt:  now.Unix(),
