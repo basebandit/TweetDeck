@@ -143,7 +143,7 @@ func Delete(ctx context.Context, db *sqlx.DB, id string, now time.Time) error {
 }
 
 //Get retrieves all Avatars from the database.
-func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
+func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
 	defer span.End()
 
@@ -180,9 +180,17 @@ func Get(ctx context.Context, db *sqlx.DB) ([]Avatar, error) {
 		allp.likes,
 		allp.bio from allp where priority_number = 1;`
 
-	avatars := []Avatar{}
+	avatars := []*Avatar{}
 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
 		return nil, errors.Wrap(err, "selecting avatars")
+	}
+
+	for _, avatar := range avatars {
+		if avatar.UserID != nil {
+			avatar.Assigned = intPointer(1)
+		} else {
+			avatar.Assigned = intPointer(0)
+		}
 	}
 
 	return avatars, nil
@@ -287,4 +295,11 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 	}
 
 	return avatars, nil
+}
+
+// intPointer is a helper to get a *int from a int. It is in the tests package
+// because we normally don't want to deal with pointers to basic types but it's
+// useful in some tests.
+func intPointer(i int) *int {
+	return &i
 }
