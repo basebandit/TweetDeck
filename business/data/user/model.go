@@ -1,14 +1,19 @@
 package user
 
 import (
+	"fmt"
 	"time"
 
+	b64 "encoding/base64"
+
+	"github.com/google/uuid"
 	"github.com/lib/pq"
 )
 
 //User represents someone with access to our system.
 type User struct {
-	ID           string         `db:"id" json:"id"`
+	ID           uuid.UUID      `db:"id" json:"-"`
+	UID          string         `json:"id"` //encoded/shortened id string
 	Firstname    string         `db:"firstname" json:"firstname"`
 	Lastname     string         `db:"lastname" json:"lastname"`
 	Email        string         `db:"email" json:"email"`
@@ -40,4 +45,29 @@ type UpdateUser struct {
 	Roles           []string `json:"roles"`
 	Password        *string  `json:"password"`
 	PasswordConfirm *string  `json:"passwordConfirm" validate:"omitempty,eqfield=Password"`
+}
+
+//Encode encodes the id to a browser friendly short format
+func (u *User) Encode() string {
+	_id, err := u.ID.MarshalBinary()
+	if err != nil {
+		fmt.Println(err)
+	}
+	return b64.RawURLEncoding.EncodeToString(_id)
+}
+
+//Decode decodes the user ID back to the original internal format
+func (u *User) Decode(id string) (*uuid.UUID, error) {
+	dec, err := b64.RawURLEncoding.DecodeString(id)
+
+	if err != nil {
+		return nil, err
+	}
+
+	decoded, err := uuid.FromBytes(dec)
+	if err != nil {
+		return nil, err
+	}
+
+	return &decoded, nil
 }
