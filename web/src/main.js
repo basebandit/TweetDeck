@@ -5,12 +5,11 @@ import "nprogress/nprogress.css"
 import router from './router'
 import Chartkick from 'vue-chartkick'
 import Chart from 'chart.js'
+import { store } from "./store";
 import vuetify from './plugins/vuetify';
 
 
-Vue.config.productionTip = false
 
-Vue.use(Chartkick.use(Chart))
 
 
 router.beforeEach((to,from,next) => {
@@ -32,8 +31,21 @@ router.afterEach(()=>{
   Nprogress.done();
 })
 
+Vue.config.productionTip = false
+
+Vue.use(Chartkick.use(Chart))
+
+
+Vue.filter("formatDate",function(dateString){
+  if (dateString){
+  return new Date(dateString).toLocaleDateString(undefined,{ weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })
+  }
+  return
+})
+
 new Vue({
   router,
+  store,
   vuetify,
   render: h => h(App)
 }).$mount('#app')

@@ -110,7 +110,7 @@
               <v-row>
                 <v-col
                   v-for="item in props.items"
-                  :key="item.handle"
+                  :key="item.username"
                   cols="12"
                   sm="6"
                   md="4"
@@ -121,16 +121,16 @@
                       :color="active?'secondary':''"
                       class="ma-4"
                       align="center"
-                      v-if="item.assigned"
+                      v-if="item.assigned === 1 && Object.keys(item).length > 6"
                     >
                       <v-responsive class="pt-4">
                         <v-avatar size="100" class="grey lighten-2">
-                          <img :src="item.profile" />
+                          <img :src="item.profileImageURL" />
                         </v-avatar>
                       </v-responsive>
 
                       <v-card-subtitle>
-                        <div class="grey--text">@{{item.handle}}</div>
+                        <div class="grey--text">@{{item.username}}</div>
                         <div class="grey--text text--darken-4">{{item.bio}}</div>
                       </v-card-subtitle>
                       <v-card-text>
@@ -161,7 +161,7 @@
                           <div class="text-subtitle-1">
                             <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
                             <span class="grey--text text--darken-4">Joined</span>
-                            {{item.joined}}
+                            {{item.joinDate | formatDate}}
                           </div>
                         </v-row>
                       </v-card-actions>
@@ -172,16 +172,16 @@
                       class="ma-4"
                       align="center"
                       @click.stop="assign(toggle)"
-                      v-else
+                      v-else-if="item.assigned === 0 && Object.keys(item).length > 6"
                     >
                       <v-responsive class="pt-4">
                         <v-avatar size="100" class="grey lighten-2">
-                          <img :src="item.profile" />
+                          <img :src="item.profileImageURL" />
                         </v-avatar>
                       </v-responsive>
 
                       <v-card-subtitle>
-                        <div class="grey--text">@{{item.handle}}</div>
+                        <div class="grey--text">@{{item.username}}</div>
                         <div class="grey--text text--darken-4">{{item.bio}}</div>
                       </v-card-subtitle>
                       <v-card-text>
@@ -213,7 +213,59 @@
                           <div class="text-subtitle-1">
                             <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
                             <span class="grey--text text--darken-4">Joined</span>
-                            {{item.joined}}
+                            {{item.joinDate | formatDate}}
+                          </div>
+                        </v-row>
+                      </v-card-actions>
+                    </v-card>
+
+                    <v-card
+                      :color="active?'secondary':''"
+                      class="ma-4"
+                      align="center"
+                      @click.stop="assign(toggle)"
+                      v-else
+                    >
+                      <v-responsive class="pt-4">
+                        <v-avatar size="100" class="grey lighten-2">
+                          <img :src="item.profileImageURL" />
+                        </v-avatar>
+                      </v-responsive>
+
+                      <v-card-subtitle>
+                        <div class="grey--text">@{{item.username}}</div>
+                        <div class="grey--text text--darken-4">{{item.bio}}</div>
+                      </v-card-subtitle>
+                      <v-card-text>
+                        <div class="grey--text text--darken-4">
+                          {{item.following}}
+                          <span class="grey--text text-caption">following</span>
+                          {{item.followers}}
+                          <span
+                            class="grey--text text-caption"
+                          >followers</span>
+                        </div>
+
+                        <div>
+                          <v-chip class="ma-2" text-color="grey">
+                            <v-icon left>mdi-alert</v-icon>suspended
+                          </v-chip>
+                        </div>
+                      </v-card-text>
+                      <!-- <v-divider></v-divider> -->
+
+                      <v-card-actions>
+                        <v-row class="ma-3 text-sm grey--text">
+                          <div>
+                            <v-icon small left>mdi-twitter</v-icon>
+                            <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                          </div>
+
+                          <v-spacer></v-spacer>
+                          <div class="text-subtitle-1">
+                            <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
+                            <span class="grey--text text--darken-4">Joined</span>
+                            {{item.joinDate | formatDate}}
                           </div>
                         </v-row>
                       </v-card-actions>
@@ -262,6 +314,7 @@
   </div>
 </template>
 <script>
+import { mapGetters } from "vuex";
 export default {
   data() {
     return {
@@ -274,279 +327,14 @@ export default {
       sortByHandle: "handle",
       selected: [],
       assignDialog: false,
-      team: [
-        {
-          id: 1,
-          firstname: "Evanson ",
-          lastname: "Mwangi",
-          avatars: 120,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 2,
-          firstname: "Marcus",
-          lastname: "Mwangi",
-          avatars: 320,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 3,
-          firstname: "Mercy ",
-          lastname: "Orangi",
-          avatars: 620,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 4,
-          firstname: "Millicent",
-          lastname: "Achieng",
-          avatars: 120,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 5,
-          firstname: "Edward",
-          lastname: "Kitili",
-          avatars: 80,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 6,
-          firstname: "Changaresi",
-          lastname: "Mugamura",
-          avatars: 60,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 7,
-          firstname: "Everlyne ",
-          lastname: "Waithera",
-          avatars: 140,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 8,
-          firstname: "Wilberforce",
-          lastname: "Juma",
-          avatars: 89,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 9,
-          firstname: "Yvette ",
-          lastname: "Anyango",
-          avatars: 96,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 10,
-          firstname: "Linete ",
-          lastname: "Wavinya",
-          avatars: 80,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-      ],
-      avatars: [
-        {
-          handle: "mwasyakyalo",
-          bio: "Real distance trader | A woman of her word",
-          following: 323,
-          followers: 230,
-          likes: 710,
-          tweets: 3600,
-          joined: "April 2010",
-          profile: "/avatar-3.png",
-          assigned: true,
-        },
-        {
-          handle: "catemukami",
-          bio: "Staunch Kikuyu | Lover of fine things",
-          following: 324,
-          followers: 710,
-          likes: 300,
-          tweets: 4300,
-          joined: "April 2010",
-          profile: "/avatar-4.png",
-          assigned: true,
-        },
-        {
-          handle: "mainakamandaelder",
-          bio: "For the people by the people",
-          following: 340,
-          followers: 349,
-          likes: 490,
-          tweets: 1230,
-          joined: "April 2010",
-          profile: "/avatar-5.png",
-          assigned: true,
-        },
-        {
-          handle: "salmakambo",
-          bio: "Maji yakimwagika hayazoleki | Leave the past to be ",
-          following: 710,
-          followers: 800,
-          likes: 1020,
-          tweets: 558,
-          joined: "April 2010",
-          profile:
-            "https://pbs.twimg.com/profile_images/1277896115342528512/uNVpTeIW.jpg",
-          assigned: false,
-        },
-        {
-          handle: "the_basebandit",
-          bio:
-            "Distributed Systems Enthusiast | Teacher | Mentor | Father to many",
-          following: 540,
-          followers: 620,
-          likes: 230,
-          tweets: 1320,
-          joined: "April 2010",
-          profile: "/avatar-2.png",
-          assigned: true,
-        },
-        {
-          handle: "mamakhe",
-          bio: "Who jah bless no woman curse",
-          following: 410,
-          followers: 301,
-          likes: 370,
-          tweets: 1500,
-          joined: "April 2010",
-          profile: "/avatar-3.png",
-          assigned: false,
-        },
-        {
-          handle: "jaduong_jeuri",
-          bio: "Live and let live | Fisher of women | Opinions are my own",
-          following: 210,
-          followers: 310,
-          likes: 200,
-          tweets: 580,
-          joined: "April 2010",
-          profile: "/avatar-4.png",
-          assigned: false,
-        },
-        {
-          handle: "mwanziakaluki",
-          bio: "Real distance trader | Connecting people",
-          following: 323,
-          followers: 230,
-          likes: 710,
-          tweets: 360,
-          joined: "April 2010",
-          profile: "/avatar-5.png",
-          assigned: false,
-        },
-        {
-          handle: "catemukamizo",
-          bio: "Staunch Kikuyu | Lover of fine things",
-          following: 324,
-          followers: 710,
-          likes: 300,
-          tweets: 900,
-          joined: "April 2010",
-          profile: "/avatar-1.png",
-          assigned: false,
-        },
-        {
-          handle: "mainakamandz",
-          bio: "For the people by the people",
-          following: 340,
-          followers: 349,
-          likes: 490,
-          tweets: 960,
-          joined: "April 2010",
-          profile: "/avatar-3.png",
-          assigned: true,
-        },
-        {
-          handle: "welmakambui",
-          bio: "Maji yakimwagika hayazoleki | Leave the past to be ",
-          following: 710,
-          followers: 800,
-          likes: 1020,
-          tweets: 560,
-          joined: "April 2010",
-          profile: "/avatar-2.png",
-          assigned: true,
-        },
-        {
-          handle: "mr.Parish",
-          bio: "Substance over hype | Good over evil | Go getter",
-          following: 540,
-          followers: 620,
-          likes: 230,
-          tweets: 600,
-          joined: "April 2010",
-          profile: "/avatar-3.png",
-          assigned: true,
-        },
-        {
-          handle: "mamakhellen",
-          bio: "Who jah bless no woman curse",
-          following: 410,
-          followers: 301,
-          likes: 370,
-          tweets: 600,
-          joined: "April 2010",
-          profile: "/avatar-4.png",
-          assigned: true,
-        },
-        {
-          handle: "jaduong_ndogo",
-          bio: "Live and let live",
-          following: 210,
-          followers: 310,
-          likes: 200,
-          tweets: 690,
-          joined: "April 2010",
-          profile: "/avatar-5.png",
-          assigned: true,
-        },
-      ],
     };
   },
+  mounted() {
+    let token = window.localStorage.getItem("users");
+    this.$store.dispatch("avatars/getAvatars", { token });
+  },
   computed: {
+    ...mapGetters("avatars", ["avatars", "fetching"]),
     numberOfPages() {
       return Math.ceil(this.avatars.length / this.avatarsPerPage);
     },
