@@ -227,6 +227,32 @@ func (s *Server) handleAvatars(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, a)
 }
 
+func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	us, err := user.Get(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	//Make the user IDS url friendly and short
+	for _, u := range us {
+		u.UID = u.Encode()
+	}
+
+	render.Respond(w, r, us)
+}
+
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 // 	loginRequest := struct {
 // 		Email    string `json:"email"`
