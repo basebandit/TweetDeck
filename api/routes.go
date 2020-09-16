@@ -4,6 +4,8 @@ const (
 	avatars      = "/api/avatar/"
 	avatarUpload = "/api/avatar/upload"
 
+	people = "/api/people"
+
 	signup = "/api/signup"
 	login  = "/api/token"
 	ping   = "/api/ping"
@@ -24,4 +26,7 @@ func (s *Server) routes() {
 	s.router.Post(avatarUpload, s.handleAvatarUpload)
 	s.router.Get(avatars, s.handleAvatars)
 	// s.router.Get(avatars, s.handleGetAvatar)
+
+	//People
+	s.router.Get(people, s.handlePeople)
 }
