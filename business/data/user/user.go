@@ -223,7 +223,7 @@ func Authenticate(ctx context.Context, db *sqlx.DB, now time.Time, email, passwo
 			Issuer:    "avatarlysis",
 			Subject:   u.ID.String(),
 			Audience:  "clients",
-			ExpiresAt: now.Add(time.Hour).Unix(),
+			ExpiresAt: now.Add(time.Hour * 8760).Unix(),
 			IssuedAt:  now.Unix(),
 		},
 		Roles: u.Roles,
