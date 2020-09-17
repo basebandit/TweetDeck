@@ -60,7 +60,7 @@ export default {
     return {
       drawer: true,
       links: [
-        { icon: "dashboard", text: "Dashboard", route: "/" },
+        { icon: "dashboard", text: "Dashboard", route: "/dashboard" },
         { icon: "mdi-account-supervisor", text: "Avatars", route: "/avatars" },
         { icon: "mdi-account-group", text: "Team", route: "/team" },
       ],
