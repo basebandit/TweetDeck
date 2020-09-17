@@ -3,6 +3,7 @@ package api
 const (
 	avatars      = "/api/avatar/"
 	avatarUpload = "/api/avatar/upload"
+	avatarAssign = "/api/avatar/assign"
 
 	people = "/api/people"
 
@@ -24,6 +25,7 @@ func (s *Server) routes() {
 	//Avatars
 	// s.router.Get(avatarPing, s.handleAvatarPing)
 	s.router.Post(avatarUpload, s.handleAvatarUpload)
+	s.router.Post(avatarAssign, s.handleAssignAvatars)
 	s.router.Get(avatars, s.handleAvatars)
 	// s.router.Get(avatars, s.handleGetAvatar)
 
