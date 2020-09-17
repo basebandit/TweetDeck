@@ -13,8 +13,6 @@
         </v-card-title>
         <v-card-text>
           <v-form class="px-3">
-            <!-- <v-text-field v-model="handle" label="Twitter handle" prepend-icon="mdi-account-circle"></v-text-field> -->
-            <!-- <v-textarea v-model="bio" label="Twitter bio" prepend-icon="mdi-clipboard-account"></v-textarea> -->
             <v-file-input v-model="file" accept="text/csv" label="File input"></v-file-input>
             <v-btn class="secondary ma-2" @click="download">
               <v-icon>mdi-file-excel</v-icon>Download CSV Template
@@ -30,12 +28,16 @@
 </template>
 <script>
 import AvatarService from "@/services/AvatarService";
+import Notification from "@/components/Notification";
 export default {
   name: "Popup",
+  components: {
+    Notification,
+  },
   data() {
     return {
       handle: "",
-      file: "",
+      file: [],
       dialog: false,
       snackbarType: "",
       snackbarMessage: "",
@@ -50,20 +52,23 @@ export default {
       try {
         const token = window.localStorage.getItem("user");
         const response = await AvatarService.uploadAvatars(token, formData);
-        this.snackbarType = response.data.type;
+        this.snackbarType = "success";
         this.snackbarmessage = "Uploaded avatars successfully";
         this.snackbar = true;
         setTimeout(() => {
           this.dialog = false;
-        }, 1000);
+        }, 2000);
         /**eslint-disable */
         console.log(response.data.status, response.data);
       } catch (err) {
+        this.snackbarType = "error";
+        this.snackbarMessage = err.response.data.error;
+        this.snackbar = true;
         setTimeout(() => {
           this.dialog = false;
-        }, 500);
+        }, 2000);
         /**eslint-disable */
-        console.log(err.response.data.status, err.response.data);
+        console.log(err.response.data, err.response.data.error);
       }
     },
     download() {
