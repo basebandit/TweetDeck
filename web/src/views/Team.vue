@@ -6,9 +6,36 @@
         <v-card-title class="my-3">Team Members</v-card-title>
         <v-card-text>
           <v-row class="mx-0">
-            <v-btn color="success">
-              <v-icon small left>add</v-icon>Add new member
-            </v-btn>
+            <v-dialog v-model="dialog" max-width="500px">
+              <template v-slot:activator="{ on, attrs }">
+                <v-btn color="success" v-bind="attrs" v-on="on">
+                  <v-icon small left>add</v-icon>Add new member
+                </v-btn>
+              </template>
+              <v-card>
+                <v-card-title>
+                  <span class="headline">Add New Member</span>
+                </v-card-title>
+
+                <v-card-text>
+                  <v-row>
+                    <v-col cols="12" sm="8" md="6">
+                      <v-text-field v-model="newMember.firstname" label="Firstname"></v-text-field>
+                    </v-col>
+                    <v-col cols="12" sm="8" md="6">
+                      <v-text-field v-model="newMember.lastname" label="Lastname"></v-text-field>
+                    </v-col>
+                  </v-row>
+                </v-card-text>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+                  <v-btn color="blue darken-1" text @click="dialog = false">Cancel</v-btn>
+                  <v-btn color="blue darken-1" text @click="addMember">Save</v-btn>
+                </v-card-actions>
+              </v-card>
+            </v-dialog>
+
             <v-spacer></v-spacer>
             <v-text-field
               v-model="search"
@@ -44,6 +71,11 @@ export default {
         { text: "Following", value: "following" },
         { text: "Tweets", value: "tweets" },
       ],
+      dialog: false,
+      newMember: {
+        firstname: "",
+        lastname: "",
+      },
     };
   },
   mounted() {
@@ -61,6 +93,10 @@ export default {
       console.log(item.id);
 
       this.$router.push({ path: `/team/member/${item.id}` }); // -> /user/123
+    },
+    addMember() {
+      /**eslint-disable */
+      console.log(this.newMember.firstname, this.newMember.lastname);
     },
   },
 };
