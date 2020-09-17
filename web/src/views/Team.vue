@@ -18,14 +18,36 @@
                 </v-card-title>
 
                 <v-card-text>
-                  <v-row>
-                    <v-col cols="12" sm="8" md="6">
-                      <v-text-field v-model="newMember.firstname" label="Firstname"></v-text-field>
-                    </v-col>
-                    <v-col cols="12" sm="8" md="6">
-                      <v-text-field v-model="newMember.lastname" label="Lastname"></v-text-field>
-                    </v-col>
-                  </v-row>
+                  <v-form ref="form" v-model="valid" lazy-validation>
+                    <v-row>
+                      <v-col cols="12" sm="8" md="6">
+                        <v-text-field
+                          v-model="newMember.firstname"
+                          label="Firstname"
+                          :rules="nameRules"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                      <v-col cols="12" sm="8" md="6">
+                        <v-text-field
+                          v-model="newMember.lastname"
+                          label="Lastname"
+                          :rules="nameRules"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                    <v-row>
+                      <v-col cols="12">
+                        <v-text-field
+                          v-model="newMember.email"
+                          label="Email"
+                          :rules="emailRules"
+                          required
+                        ></v-text-field>
+                      </v-col>
+                    </v-row>
+                  </v-form>
                 </v-card-text>
 
                 <v-card-actions>
@@ -72,9 +94,19 @@ export default {
         { text: "Tweets", value: "tweets" },
       ],
       dialog: false,
+      valid: true,
+      nameRules: [
+        (v) => !!v || "Name is required",
+        (v) => (v && v.length <= 15) || "Name must be less than 15 characters",
+      ],
+      emailRules: [
+        (v) => !!v || "E-mail is required",
+        (v) => /.+@.+\..+/.test(v) || "E-mail must be valid",
+      ],
       newMember: {
         firstname: "",
         lastname: "",
+        email: "",
       },
     };
   },
@@ -95,8 +127,13 @@ export default {
       this.$router.push({ path: `/team/member/${item.id}` }); // -> /user/123
     },
     addMember() {
+      this.$refs.form.validate();
       /**eslint-disable */
-      console.log(this.newMember.firstname, this.newMember.lastname);
+      console.log(
+        this.newMember.firstname,
+        this.newMember.lastname,
+        this.newMember.Email
+      );
     },
   },
 };
