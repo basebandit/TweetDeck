@@ -8,7 +8,7 @@
           </v-card>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row v-if="member">
         <v-col>
           <v-card align="center">
             <v-responsive class="pt-4">
@@ -20,7 +20,7 @@
             <v-card-subtitle>
               <div>Avatars {{member.avatars}}</div>
               <v-card-text>
-                <div>Created at {{member.createdAt}}</div>
+                <div>Created at {{member.createdAt | formatDate}}</div>
               </v-card-text>
             </v-card-subtitle>
             <v-divider class="mx-4"></v-divider>
@@ -214,6 +214,7 @@
   </div>
 </template>
 <script>
+import { mapGetters } from "vuex";
 export default {
   name: "Member",
   props: ["id"],
@@ -387,129 +388,42 @@ export default {
           assigned: true,
         },
       ],
-      member: {
-        firstname: "Evanson",
-        lastname: "Mwangi",
-        createdAt: "May 26, 2020 10.09am",
-        followers: 1028,
-        following: 3029,
-        tweets: 3490,
-        likes: 3020,
-        avatars: 50,
-      },
-      // team: [
-      //   {
-      //     id: 1,
-      //     name: "Evanson Mwangi",
-      //     avatars: 120,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 2,
-      //     name: "Marcus Mwangi",
-      //     avatars: 320,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 3,
-      //     name: "Mercy Orangi",
-      //     avatars: 620,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 4,
-      //     name: "Millicent Achieng",
-      //     avatars: 120,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 5,
-      //     name: "Edward Kitili",
-      //     avatars: 80,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 6,
-      //     name: "Changaresi Mugamura",
-      //     avatars: 60,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 7,
-      //     name: "Everlyne Waithera",
-      //     avatars: 140,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 8,
-      //     name: "Wilberforce Juma",
-      //     avatars: 89,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 9,
-      //     name: "Yvette Anyango",
-      //     avatars: 96,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      //   {
-      //     id: 10,
-      //     name: "Linete Wavinya",
-      //     avatars: 80,
-      //     createdAt: "May 26, 2020 10:09am",
-      //     followers: 780,
-      //     following: 300,
-      //     likes: 600,
-      //     tweets: 500,
-      //   },
-      // ],
+      // member: {
+      //   firstname: "Evanson",
+      //   lastname: "Mwangi",
+      //   createdAt: "May 26, 2020 10.09am",
+      //   followers: 1028,
+      //   following: 3029,
+      //   tweets: 3490,
+      //   likes: 3020,
+      //   avatars: 50,
+      // },
     };
   },
+  mounted() {
+    this.$store.dispatch("people/getPeople", { token: this.token });
+  },
   computed: {
-    // profile() {
-    //   let member = this.team.filter(
-    //     (member) => member.id === parseInt(this.id, 10)
-    //   );
-    //   /**eslint-disable */
-    //   console.log(member);
-    //   return member;
-    // },
+    ...mapGetters("people", ["team"]),
+    token() {
+      return window.localStorage.getItem("user");
+    },
+    member() {
+      /**eslint-disable */
+      console.log("TEAM", ...this.team);
+      let member;
+      this.team.forEach((t) => {
+        /**eslint-disable */
+        console.log("ID", t);
+        if (t.id == this.id) {
+          member = t;
+        }
+      });
+      /**eslint-disable */
+      console.log(member);
+      return member;
+    },
+
     numberOfPages() {
       return Math.ceil(this.avatars.length / this.avatarsPerPage);
     },
