@@ -6,12 +6,16 @@ export default {
     avatars: [],
     fetchAvatars: false,
     assignAvatars: false,
+    avatarsByUser: false,
+    userAvatars: []
   },
 
   getters: {
     avatars: (state) => state.avatars,
     fetching: (state) => state.fetchAvatars,
     assigning: (state) => state.assignAvatars,
+    fetchAvatarsByUser: (state) => state.avatarsByUser,
+    userAvatars: (state) => state.userAvatars
   },
 
   actions: {
@@ -45,6 +49,17 @@ export default {
         commit("assignAvatarFailure", { message: err.response.data.error })
       })
 
+    },
+    getAvatarsByUser({ commit }, payload) {
+      const { token, id } = payload
+      commit("avatarsByUserStatus")
+      AvatarService.getAvatarsByUser(token, id).then(response => {
+        if (response.status === 200) {
+          commit("avatarsByUserSuccess", { avatars: response.data })
+        }
+      }).catch(err => {
+        commit("avatarsByUserFailure", { message: err.response.data.error })
+      })
     }
   },
 
@@ -79,6 +94,20 @@ export default {
       /**eslint-disable */
       console.log("assignAvatarFailure", message)
       state.assignAvatars = false;
+    },
+    avatarsByUserStatus(state) {
+      state.avatarsByUser = true
+    },
+    avatarsByUserSuccess(state, payload) {
+      const { avatars } = payload
+      state.avatarsByUser = false
+      state.userAvatars = avatars
+    },
+    avatarsByUserFailure(state, payload) {
+      const { message } = payload
+      state.avatarsByUser = false
+      /**eslint-disable */
+      console.log(message)
     }
   },
 };
