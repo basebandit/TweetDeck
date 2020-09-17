@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"time"
 
 	"ekraal.org/avatarlysis/business/data/avatar"
 
@@ -157,6 +158,47 @@ func (s *Server) handleToken(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, tkn)
 }
 
+func (s *Server) handleAssignAvatars(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.avatarupload")
+	defer span.End()
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	assignRequest := struct {
+		UserID  string   `json:"userID"`
+		Avatars []string `json:"avatars"`
+	}{}
+
+	if err := json.NewDecoder(r.Body).Decode(&assignRequest); err != nil {
+		s.log.Println(errors.Wrap(err, "Signup: decoding user"))
+		render.Render(w, r, ErrBadRequest(err))
+		return
+	}
+
+	s.log.Printf("%+v\n", assignRequest)
+
+	var a avatar.UpdateAvatar
+	for _, id := range assignRequest.Avatars {
+		a.UserID = stringPointer(assignRequest.UserID)
+		if err := avatar.Update(ctx, s.db, id, a, time.Now()); err != nil {
+			if err == avatar.ErrNotFound {
+				s.log.Println(errors.Wrap(err, "Assign: assigining avatars to user"))
+				render.Render(w, r, ErrInvalidRequest(err))
+				return
+			}
+			s.log.Println(errors.Wrap(err, "Assign: assigining avatars to user"))
+			render.Render(w, r, ErrInternalServerError)
+			return
+		}
+	}
+
+	render.Respond(w, r, http.NoBody)
+}
+
 func (s *Server) handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.avatarupload")
 	defer span.End()
@@ -245,12 +287,60 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	usr := []struct {
+		Avatars   int       `json:"avatars"`
+		UserID    string    `json:"id"`
+		Firstname string    `json:"firstname"`
+		Lastname  string    `json:"lastname"`
+		Tweets    int       `json:"tweets"`
+		Followers int       `json:"followers"`
+		Likes     int       `json:"likes"`
+		Following int       `json:"following"`
+		CreatedAt time.Time `json:"createdAt"`
+	}{}
 	//Make the user IDS url friendly and short
+
 	for _, u := range us {
-		u.UID = u.Encode()
+		u.UID = user.Encode(u.ID)
+		count, err := avatar.GetAvatarCountByUserID(ctx, s.db, u.ID.String())
+		if err != nil {
+			s.log.Printf("api: %v\n", err)
+			render.Render(w, r, ErrInternalServerError)
+			return
+		}
+
+		avatar, err := avatar.AggregateAvatarByUserID(ctx, s.db, u.ID.String())
+		if err != nil {
+			s.log.Printf("api: %v\n", err)
+			render.Render(w, r, ErrInternalServerError)
+			return
+		}
+
+		usr = append(usr, struct {
+			Avatars   int       `json:"avatars"`
+			UserID    string    `json:"id"`
+			Firstname string    `json:"firstname"`
+			Lastname  string    `json:"lastname"`
+			Tweets    int       `json:"tweets"`
+			Followers int       `json:"followers"`
+			Likes     int       `json:"likes"`
+			Following int       `json:"following"`
+			CreatedAt time.Time `json:"createdAt"`
+		}{
+			Avatars:   count,
+			UserID:    u.UID,
+			Tweets:    *avatar.Tweets,
+			Following: *avatar.Following,
+			Followers: *avatar.Followers,
+			Likes:     *avatar.Likes,
+			Firstname: u.Firstname,
+			Lastname:  u.Lastname,
+			CreatedAt: u.CreatedAt,
+		})
+
 	}
 
-	render.Respond(w, r, us)
+	render.Respond(w, r, usr)
 }
 
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -407,4 +497,9 @@ func readFile(reader io.Reader) ([]string, error) {
 
 	}
 	return usernames, nil
+}
+
+func stringPointer(s string) *string {
+	str := s
+	return &str
 }
