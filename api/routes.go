@@ -8,8 +8,9 @@ const (
 	avatarAssign    = "/api/avatar/assign"
 	avatarsByUserID = "/api/avatar/{id}"
 
-	people = "/api/people"
-	new    = "/api/people/new"
+	peopleAssigned   = "/api/people/assigned"
+	peopleUnassigned = "/api/people/unassigned"
+	new              = "/api/people/new"
 
 	signup = "/api/signup"
 	login  = "/api/token"
@@ -33,7 +34,8 @@ func (s *Server) routes() {
 		r.Get(avatars, s.handleAvatars)
 
 		//People
-		r.Get(people, s.handlePeople)
+		r.Get(peopleAssigned, s.handleAssignedPeople)
+		r.Get(peopleUnassigned, s.handleUnassignedPeople)
 		r.Post(new, s.handleAddMember)
 	})
 

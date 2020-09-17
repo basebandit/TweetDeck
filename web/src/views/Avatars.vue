@@ -337,11 +337,11 @@ export default {
   },
   mounted() {
     this.$store.dispatch("avatars/getAvatars", { token: this.token });
-    this.$store.dispatch("people/getPeople", { token: this.token });
+    this.$store.dispatch("people/getUnassignedPeople", { token: this.token });
   },
   computed: {
     ...mapGetters("avatars", ["avatars", "fetching"]),
-    ...mapGetters("people", ["team"]),
+    ...mapGetters("people", { team: "unassignedTeam" }),
 
     token() {
       return window.localStorage.getItem("user");

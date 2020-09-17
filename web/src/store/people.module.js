@@ -2,49 +2,115 @@ import PeopleService from "@/services/PeopleService"
 
 export default {
   namespaced: true,
-  state:{
-    people:[],
-    fetchPeople: false,
+  state: {
+    assignedPeople: [],
+    unassignedPeople: [],
+    fetchAssignedPeople: false,
+    fetchUnassignedPeople: false,
+    addPerson: false,
   },
 
-  getters:{
-    team: (state)=> state.people,
-    fetching: (state) => state.fetchPeople
+  getters: {
+    assignedTeam: (state) => state.assignedPeople,
+    unassignedTeam: (state) => state.unassignedPeople,
+    fetchingAssigned: (state) => state.fetchAssignedPeople,
+    fetchingUnassigned: (state) => state.fetchUnassignedPeople,
+    creating: (state) => state.addPerson
   },
 
-  actions:{
-    getPeople({commit},payload){
-      const {token} = payload
-      commit("updatePeopleFetchStatus")
-      PeopleService.getPeople(token).then(response => {
-        setTimeout(()=>{
-          if (response.status === 200){
-            commit("peopleFetchSuccess",{
+  actions: {
+    getAssignedPeople({ commit }, payload) {
+      const { token } = payload
+      commit("asPeopleFetchStatus")
+      PeopleService.getAssignedPeople(token).then(response => {
+        setTimeout(() => {
+          if (response.status === 200) {
+            commit("asPeopleFetchSuccess", {
               people: response.data,
             })
           }
-        },500)
+        }, 500)
       }).catch(err => {
-        commit("peopleFetchFailure",{
+        commit("asPeopleFetchFailure", {
           message: err.response.data.error
         })
       })
+    },
+    getUnassignedPeople({ commit }, payload) {
+      const { token } = payload
+      commit("usPeopleFetchStatus")
+      PeopleService.getUnassignedPeople(token).then(response => {
+        setTimeout(() => {
+          if (response.status === 200) {
+            commit("usPeopleFetchSuccess", {
+              people: response.data,
+            })
+          }
+        }, 500)
+      }).catch(err => {
+        commit("usPeopleFetchFailure", {
+          message: err.response.data.error
+        })
+      })
+    },
+    addPerson({ commit }, payload) {
+      const { token, person, router } = payload
+      commit("addPersonStatus")
+      PeopleService.addPerson(token, person).then(response => {
+        if (response.status === 201) {
+          commit("addPersonSuccess", { message: "added new member successfully" })
+          setTimeout(() => {
+            router.go()//refresh page to see added member
+          })
+        }
+      }).catch(err => {
+        commit("addPersonFailure", { message: err.response.data.error })
+      })
     }
   },
-  mutations:{
-    updatePeopleFetchStatus(state){
-      state.fetchPeople = true;
+  mutations: {
+    usPeopleFetchStatus(state) {
+      state.fetchUnassignedPeople = true;
     },
-    peopleFetchSuccess(state,payload){
-      const {people} = payload
-      state.fetchPeople = false
-      state.people = people
+    usPeopleFetchSuccess(state, payload) {
+      const { people } = payload
+      state.fetchUnassignedPeople = false
+      state.unassignedPeople = people
     },
-    peopleFetchFailure(state,payload){
-      const {message} = payload
-      state.fetchPeople = false
+    usPeopleFetchFailure(state, payload) {
+      const { message } = payload
+      state.fetchUnasignedPeople = false
       /**eslint-disable */
-      console.error("peopleFetchFailure",message)
+      console.error("usPeopleFetchFailure", message)
+    },
+    asPeopleFetchStatus(state) {
+      state.fetchAssignedPeople = true;
+    },
+    asPeopleFetchSuccess(state, payload) {
+      const { people } = payload
+      state.fetchAssignedPeople = false
+      state.assignedPeople = people
+    },
+    asPeopleFetchFailure(state, payload) {
+      const { message } = payload
+      state.fetchAssignedPeople = false
+      /**eslint-disable */
+      console.error("asPeopleFetchFailure", message)
+    },
+    addPersonStatus(state) {
+      state.addPerson = true
+    },
+    addPersonSuccess(state, payload) {
+      const { message } = payload
+      state.addPerson = false
+      /**eslint-disable */
+      console.log(message)
+    },
+    addPersonFailure(state, payload) {
+      const { message } = payload
+      state.addPerson = false
+      /**eslint-disable */
+      console.error(message)
     }
   }
 }

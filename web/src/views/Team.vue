@@ -111,10 +111,10 @@ export default {
     };
   },
   mounted() {
-    this.$store.dispatch("people/getPeople", { token: this.token });
+    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
   },
   computed: {
-    ...mapGetters("people", ["team"]),
+    ...mapGetters("people", { team: "assignedTeam" }),
     token() {
       return window.localStorage.getItem("user");
     },
@@ -127,7 +127,19 @@ export default {
       this.$router.push({ path: `/team/member/${item.id}` }); // -> /user/123
     },
     addMember() {
-      this.$refs.form.validate();
+      if (this.$refs.form.validate()) {
+        let person = {
+          firstname: this.newMember.firstname,
+          lastname: this.newMember.lastname,
+          email: this.newMember.Email,
+        };
+
+        this.$store.dispatch("people/addPerson", {
+          token: this.token,
+          person,
+          router: this.$router,
+        });
+      }
       /**eslint-disable */
       console.log(
         this.newMember.firstname,

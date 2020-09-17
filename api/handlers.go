@@ -306,7 +306,7 @@ func (s *Server) handleAvatarsByUserID(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, avatars)
 }
 
-func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleAssignedPeople(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
 	defer span.End()
 
@@ -370,6 +370,60 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 			Following: *avatar.Following,
 			Followers: *avatar.Followers,
 			Likes:     *avatar.Likes,
+			Firstname: u.Firstname,
+			Lastname:  u.Lastname,
+			CreatedAt: u.CreatedAt,
+		})
+
+	}
+
+	render.Respond(w, r, usr)
+}
+
+func (s *Server) handleUnassignedPeople(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	us, err := user.Get(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	usr := []struct {
+		UserID    string    `json:"id"`
+		Firstname string    `json:"firstname"`
+		Lastname  string    `json:"lastname"`
+		Tweets    int       `json:"tweets"`
+		Followers int       `json:"followers"`
+		Likes     int       `json:"likes"`
+		Following int       `json:"following"`
+		CreatedAt time.Time `json:"createdAt"`
+	}{}
+	//Make the user IDS url friendly and short
+
+	for _, u := range us {
+		u.UID = user.Encode(u.ID)
+
+		usr = append(usr, struct {
+			UserID    string    `json:"id"`
+			Firstname string    `json:"firstname"`
+			Lastname  string    `json:"lastname"`
+			Tweets    int       `json:"tweets"`
+			Followers int       `json:"followers"`
+			Likes     int       `json:"likes"`
+			Following int       `json:"following"`
+			CreatedAt time.Time `json:"createdAt"`
+		}{
+			UserID:    u.UID,
 			Firstname: u.Firstname,
 			Lastname:  u.Lastname,
 			CreatedAt: u.CreatedAt,

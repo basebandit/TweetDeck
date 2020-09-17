@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 
+	"github.com/lib/pq"
+
 	"time"
 
 	"ekraal.org/avatarlysis/business/data/auth"
@@ -53,7 +55,7 @@ func Create(ctx context.Context, db *sqlx.DB, nu NewUser, now time.Time) (User, 
 	u.ID = uuid.New()
 	u.Firstname = nu.Firstname
 	u.Lastname = nu.Lastname
-	u.Roles = nu.Roles
+	u.Roles = pq.StringArray{"USER"} //by default every person is a USER
 	u.Active = true
 	u.CreatedAt = now
 	u.UpdatedAt = now

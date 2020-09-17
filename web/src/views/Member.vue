@@ -235,14 +235,14 @@ export default {
     };
   },
   mounted() {
-    this.$store.dispatch("people/getPeople", { token: this.token });
+    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
     this.$store.dispatch("avatars/getAvatarsByUser", {
       token: this.token,
       id: this.id,
     });
   },
   computed: {
-    ...mapGetters("people", ["team"]),
+    ...mapGetters("people", { team: "assignedTeam" }),
     ...mapGetters("avatars", { avatars: "userAvatars" }),
     token() {
       return window.localStorage.getItem("user");
