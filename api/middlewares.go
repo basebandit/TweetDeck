@@ -11,6 +11,7 @@ import (
 	"ekraal.org/avatarlysis/business/data/auth"
 	"github.com/go-chi/render"
 	"go.opentelemetry.io/otel/api/global"
+	"go.opentelemetry.io/otel/api/trace"
 )
 
 //Logger writes some information about the request to the logs in the
@@ -42,11 +43,13 @@ func Logger(ctx context.Context, log *log.Logger) func(next http.Handler) http.H
 }
 
 //Authenticate validates a JWT from the `Authorization` header.
-func Authenticate(ctx context.Context, a *auth.Auth) func(next http.Handler) http.Handler {
+func Authenticate(a *auth.Auth) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		hfn := func(w http.ResponseWriter, r *http.Request) {
 
-			ctx, span := global.Tracer("avatarlysis").Start(ctx, "api.middlewares.authenticate")
+			// ctx, span := global.Tracer("avatarlysis").Start(ctx, "api.middlewares.authenticate")
+			// defer span.End()
+			ctx, span := trace.SpanFromContext(r.Context()).Tracer().Start(r.Context(), "api.middlewares.authenticate")
 			defer span.End()
 
 			//Parse the authorization header. Expected header is of the format `Bearer <token>`.
