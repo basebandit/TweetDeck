@@ -9,5 +9,8 @@ export default {
   },
   assignAvatars(token, payload) {
     return Api(token).post('/api/avatar/assign', payload)
+  },
+  getAvatarsByUser(token, id) {
+    return Api(token).get(`/api/avatar/${id}`)
   }
 }
