@@ -5,6 +5,6 @@ export default {
     return Api(token).get('/api/people')
   },
   addPerson(token, person) {
-    return Api(token).post('/api/people/new')
+    return Api(token).post('/api/people/new', person)
   }
 }
