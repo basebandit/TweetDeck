@@ -1,5 +1,7 @@
 package api
 
+import "github.com/go-chi/chi"
+
 const (
 	avatars         = "/api/avatar/"
 	avatarUpload    = "/api/avatar/upload"
@@ -19,19 +21,24 @@ func (s *Server) routes() {
 	authenticate := Authenticate(s.auth)
 	//middlewares
 	s.router.Use(logger)
-	s.router.Use(authenticate)
+
+	s.router.Group(func(r chi.Router) {
+		//===============Authenticated Routes==============
+		r.Use(authenticate)
+		//Avatars
+		r.Post(avatarUpload, s.handleAvatarUpload)
+		r.Post(avatarAssign, s.handleAssignAvatars)
+		r.Get(avatarsByUserID, s.handleAvatarsByUserID)
+		r.Get(avatars, s.handleAvatars)
+
+		//People
+		r.Get(people, s.handlePeople)
+	})
+
+	//==============Unauthenticated Routes===============
 	//Auth
 	s.router.Post(signup, s.handleSignup)
 	s.router.Get(ping, s.handlePing)
 	s.router.Get(login, s.handleToken)
-	//Avatars
-	// s.router.Get(avatarPing, s.handleAvatarPing)
-	s.router.Post(avatarUpload, s.handleAvatarUpload)
-	s.router.Post(avatarAssign, s.handleAssignAvatars)
-	s.router.Get(avatarsByUserID, s.handleAvatarsByUserID)
-	s.router.Get(avatars, s.handleAvatars)
-	// s.router.Get(avatars, s.handleGetAvatar)
 
-	//People
-	s.router.Get(people, s.handlePeople)
 }
