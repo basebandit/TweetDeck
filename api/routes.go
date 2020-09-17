@@ -9,6 +9,7 @@ const (
 	avatarsByUserID = "/api/avatar/{id}"
 
 	people = "/api/people"
+	new    = "/api/people/new"
 
 	signup = "/api/signup"
 	login  = "/api/token"
@@ -33,6 +34,7 @@ func (s *Server) routes() {
 
 		//People
 		r.Get(people, s.handlePeople)
+		r.Post(new, s.handleAddMember)
 	})
 
 	//==============Unauthenticated Routes===============
