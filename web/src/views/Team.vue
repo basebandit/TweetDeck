@@ -25,6 +25,7 @@
   </div>
 </template>
 <script>
+import { mapGetters } from "vuex";
 export default {
   data() {
     return {
@@ -43,119 +44,16 @@ export default {
         { text: "Following", value: "following" },
         { text: "Tweets", value: "tweets" },
       ],
-      team: [
-        {
-          id: 1,
-          firstname: "Evanson ",
-          lastname: "Mwangi",
-          avatars: 120,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 2,
-          firstname: "Marcus",
-          lastname: "Mwangi",
-          avatars: 320,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 3,
-          firstname: "Mercy ",
-          lastname: "Orangi",
-          avatars: 620,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 4,
-          firstname: "Millicent",
-          lastname: "Achieng",
-          avatars: 120,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 5,
-          firstname: "Edward",
-          lastname: "Kitili",
-          avatars: 80,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 6,
-          firstname: "Changaresi",
-          lastname: "Mugamura",
-          avatars: 60,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 7,
-          firstname: "Everlyne ",
-          lastname: "Waithera",
-          avatars: 140,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 8,
-          firstname: "Wilberforce",
-          lastname: "Juma",
-          avatars: 89,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 9,
-          firstname: "Yvette ",
-          lastname: "Anyango",
-          avatars: 96,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-        {
-          id: 10,
-          firstname: "Linete ",
-          lastname: "Wavinya",
-          avatars: 80,
-          createdAt: "May 26, 2020 10:09am",
-          followers: 780,
-          following: 300,
-          likes: 600,
-          tweets: 500,
-        },
-      ],
     };
+  },
+  mounted() {
+    this.$store.dispatch("people/getPeople", { token: this.token });
+  },
+  computed: {
+    ...mapGetters("people", ["team"]),
+    token() {
+      return window.localStorage.getItem("user");
+    },
   },
   methods: {
     handleClick(item) {
