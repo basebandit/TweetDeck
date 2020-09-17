@@ -7,6 +7,8 @@ import (
 	"io"
 	"time"
 
+	"github.com/go-chi/chi"
+
 	"ekraal.org/avatarlysis/business/data/avatar"
 
 	"go.opentelemetry.io/otel/api/global"
@@ -267,6 +269,41 @@ func (s *Server) handleAvatars(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, a)
+}
+
+func (s *Server) handleAvatarsByUserID(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	uid := chi.URLParam(r, "id")
+
+	id, err := user.Decode(uid)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	avatars, err := avatar.GetByUserID(ctx, s.db, id.String())
+	if err != nil {
+		if err == avatar.ErrNotFound {
+			s.log.Printf("api: %v\n", err)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Respond(w, r, avatars)
 }
 
 func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
