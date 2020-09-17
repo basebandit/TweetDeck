@@ -48,8 +48,8 @@ type UpdateUser struct {
 }
 
 //Encode encodes the id to a browser friendly short format
-func (u *User) Encode() string {
-	_id, err := u.ID.MarshalBinary()
+func Encode(id uuid.UUID) string {
+	_id, err := id.MarshalBinary()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -57,7 +57,7 @@ func (u *User) Encode() string {
 }
 
 //Decode decodes the user ID back to the original internal format
-func (u *User) Decode(id string) (*uuid.UUID, error) {
+func Decode(id string) (*uuid.UUID, error) {
 	dec, err := b64.RawURLEncoding.DecodeString(id)
 
 	if err != nil {
