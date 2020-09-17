@@ -54,7 +54,11 @@
                     <v-container>
                       <v-row>
                         <v-col cols="12">
-                          <v-autocomplete :items="members" label="Member to assign"></v-autocomplete>
+                          <v-autocomplete
+                            :items="members"
+                            v-model="assignee"
+                            label="Member to assign"
+                          ></v-autocomplete>
                         </v-col>
                       </v-row>
                     </v-container>
@@ -63,7 +67,7 @@
                   <v-card-actions>
                     <v-spacer></v-spacer>
                     <v-btn color="blue darken-1" text @click="assignDialog = false">Close</v-btn>
-                    <v-btn color="blue darken-1" text @click="assignDialog = false">Assign</v-btn>
+                    <v-btn color="blue darken-1" text @click="assignAvatar">Assign</v-btn>
                   </v-card-actions>
                 </v-card>
               </v-dialog>
@@ -105,7 +109,7 @@
         </template>
 
         <template v-slot:default="props">
-          <v-item-group multiple v-model="selected">
+          <v-item-group multiple v-model="selected" @change="clicked">
             <v-container>
               <v-row>
                 <v-col
@@ -219,13 +223,7 @@
                       </v-card-actions>
                     </v-card>
 
-                    <v-card
-                      :color="active?'secondary':''"
-                      class="ma-4"
-                      align="center"
-                      @click.stop="assign(toggle)"
-                      v-else
-                    >
+                    <v-card :color="active?'secondary':''" class="ma-4" align="center" v-else>
                       <v-responsive class="pt-4">
                         <v-avatar size="100" class="grey lighten-2">
                           <img :src="item.profileImageURL" />
@@ -324,17 +322,28 @@ export default {
       filter: {},
       sortDesc: false,
       page: 1,
+      count: 0,
       sortByHandle: "handle",
       selected: [],
+      selectedAvatarsIDs: [],
       assignDialog: false,
+      assignee: "",
+      assigneeID: "",
     };
   },
   mounted() {
     let token = window.localStorage.getItem("users");
     this.$store.dispatch("avatars/getAvatars", { token });
+    this.$store.dispatch("people/getPeople", { token });
   },
   computed: {
     ...mapGetters("avatars", ["avatars", "fetching"]),
+    ...mapGetters("people", ["team"]),
+
+    token() {
+      return window.localStorage.getItem("users");
+    },
+
     numberOfPages() {
       return Math.ceil(this.avatars.length / this.avatarsPerPage);
     },
@@ -343,9 +352,11 @@ export default {
     },
     members() {
       const names = [];
-      this.team.forEach((member) =>
-        names.push(member.firstname + " " + member.lastname)
-      );
+      this.team.forEach((member) => {
+        names.push(member.firstname + " " + member.lastname);
+        this.assigneeID = member.id;
+      });
+
       return names;
     },
     // filteredKeys() {
@@ -369,8 +380,37 @@ export default {
       this.avatars.sort((a, b) => (a[prop] > b[prop] ? -1 : 1));
     },
     assign(e) {
+      e(this);
+    },
+    assignAvatar() {
       /**eslint-disable */
-      console.log(e(this));
+      console.log(
+        "ASSIGNED USER",
+        this.assignee,
+        this.assigneeID,
+        this.selectedAvatarsIDs
+      );
+      this.assignDialog = false;
+      let payload = {
+        userID: this.assigneeID,
+        avatars: this.selectedAvatarsIDs,
+      };
+      this.$store.dispatch("avatars/assignAvatars", {
+        token: this.token,
+        assign: payload,
+      });
+      /**eslint-disable */
+      console.log(payload);
+    },
+    clicked(v) {
+      /**eslint-disable */
+      // this.selected.forEach((idx) => {
+      if (Object.keys(this.avatars[v[this.count]]).length > 6) {
+        this.selectedAvatarsIDs.push(this.avatars[v[this.count]].id);
+      }
+      // });
+      console.log("CLICKED", this.selectedAvatarsIDs);
+      this.count++;
     },
   },
 };
