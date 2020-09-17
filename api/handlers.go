@@ -380,6 +380,42 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, usr)
 }
 
+func (s *Server) handleAddMember(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	v, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	var nu user.NewUser
+	if err := json.NewDecoder(r.Body).Decode(&nu); err != nil {
+		s.log.Println(errors.Wrap(err, "Signup: decoding user"))
+		render.Render(w, r, ErrBadRequest(err))
+		return
+	}
+
+	usr, err := user.Create(s.ctx, s.db, nu, v.Now)
+	if err != nil {
+		if pqErr, ok := errors.Cause(err).(*pq.Error); ok {
+			if pqErr.Code == pq.ErrorCode("23505") {
+				s.log.Println(err)
+				render.Render(w, r, ErrDuplicateField(ErrEmailTaken))
+				return
+			}
+		}
+		s.log.Println(errors.Wrapf(err, "User: %+v", &usr))
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	render.Respond(w, r, usr)
+}
+
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 // 	loginRequest := struct {
 // 		Email    string `json:"email"`
