@@ -44,12 +44,12 @@ func (t *TwitterService) Lookup(ctx context.Context, l *log.Logger, usernames []
 
 	log.Println("twitter lookup started")
 
-	users, _, err := client.Users.Lookup(userLookupParams)
+	users, tres, err := client.Users.Lookup(userLookupParams)
 	if err != nil {
 		return nil, errors.Wrap(err, "fetching twitter profiles")
 	}
 
-	log.Println("twitter lookup finished successful")
+	log.Printf("twitter usernames lookup finished successful : res [%v]\n", tres.StatusCode)
 	return users, nil
 }
 
@@ -57,10 +57,13 @@ func (t *TwitterService) Lookup(ctx context.Context, l *log.Logger, usernames []
 func (t *TwitterService) UserTimeline(id int64) ([]twitter.Tweet, error) {
 	client := t.client()
 	userTimelineParams := &twitter.UserTimelineParams{UserID: id}
-	tweet, _, err := client.Timelines.UserTimeline(userTimelineParams)
+	tweet, tres, err := client.Timelines.UserTimeline(userTimelineParams)
 	if err != nil {
-		return nil, errors.Wrap(err, "fetching twitter user timeline")
+		return nil, errors.Wrapf(err, "fetching twitter user timeline : res [%v]\n", tres)
 	}
+
+	log.Printf("twitter user timeline lookup finished successful : res [%v]\n", tres.StatusCode)
+
 	return tweet, nil
 }
 
