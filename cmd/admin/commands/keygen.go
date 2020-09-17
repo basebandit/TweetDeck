@@ -25,6 +25,12 @@ func KeyGen(dir string) error {
 		return ErrHelp
 	}
 
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, os.FileMode(0700)); err != nil {
+			return errors.Wrap(err, "creating dir")
+		}
+	}
+
 	//Create a file for the private key information in PEM format.
 	privateFile, err := os.Create(filepath.Join(dir, filepath.Base("private.pem")))
 	if err != nil {
