@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 
+	"ekraal.org/avatarlysis/business/data/user"
+
 	"time"
 
 	"github.com/google/uuid"
@@ -99,11 +101,16 @@ func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now ti
 
 	if ua.UserID != nil {
 
-		if _, err := uuid.Parse(*ua.UserID); err != nil {
+		userID, err := user.Decode(*ua.UserID)
+		if err != nil {
+			return err
+		}
+
+		if _, err := uuid.Parse(userID.String()); err != nil {
 			return ErrInvalidID
 		}
 
-		a.UserID = ua.UserID
+		a.UserID = stringPointer(userID.String())
 	}
 
 	a.UpdatedAt = now
@@ -229,7 +236,7 @@ func GetByID(ctx context.Context, db *sqlx.DB, id string) (Avatar, error) {
 		p.bio,p.profile_image_url,p.twitter_id,
 		p.followers,p.following, p.likes,p.tweets, p.join_date,p.last_tweet_time from avatars a LEFT JOIN
 	 profiles p on a.id = p.avatar_id
-		WHERE a.id=$1 AND active=TRUE ORDER BY p.created_at DESC LIMIT 1;
+		WHERE a.id=$1 ORDER BY p.created_at DESC LIMIT 1;
 		`
 
 	var a Avatar
@@ -297,9 +304,107 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 	return avatars, nil
 }
 
+//AggregateAvatarByUserID finds the avatars assigned to the given userID ands adds up the totals of likes,following
+//followers, tweets fields.
+func AggregateAvatarByUserID(ctx context.Context, db *sqlx.DB, userID string) (Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getbyuserid")
+	defer span.End()
+
+	if _, err := uuid.Parse(userID); err != nil {
+		return Avatar{}, ErrInvalidID
+	}
+
+	const q = `with allp as (
+		SELECT 
+		a.id,
+		a.username,
+		a.user_id,
+		p.followers,
+		p.following,
+		p.profile_image_url,
+		p.tweets,
+		p.join_date,
+		p.likes,
+		p.bio,
+		row_number() over (
+			partition by 
+			a.id,
+			a.user_id ,
+			a.username order by p.created_at desc,
+			p.id desc) as priority_number from 
+			avatars a LEFT JOIN profiles p ON
+			a.id = p.avatar_id WHERE a.user_id=$1
+			) 
+			select 
+			allp.id,
+			allp.username,
+			allp.user_id,
+			allp.followers,
+			allp.following,
+			allp.tweets,
+			allp.profile_image_url,
+			allp.join_date,
+			allp.likes,
+			allp.bio from allp where priority_number = 1;
+	`
+	avatars := []Avatar{}
+
+	if err := db.SelectContext(ctx, &avatars, q, userID); err != nil {
+		return Avatar{}, errors.Wrap(err, "selecting avatars")
+	}
+
+	avatar := Avatar{}
+
+	var (
+		tweets    int
+		likes     int
+		followers int
+		following int
+	)
+
+	for _, a := range avatars {
+		tweets += *a.Tweets
+		likes += *a.Likes
+		following += *a.Following
+		followers += *a.Followers
+	}
+
+	avatar.Likes = intPointer(likes)
+	avatar.Tweets = intPointer(tweets)
+	avatar.Followers = intPointer(followers)
+	avatar.Following = intPointer(following)
+
+	return avatar, nil
+}
+
+//GetAvatarCountByUserID returns the number of avatars assigned to the user with the
+//given id. Returns -1 if error was encountered.
+func GetAvatarCountByUserID(ctx context.Context, db *sqlx.DB, userID string) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getbyuserid")
+	defer span.End()
+
+	if _, err := uuid.Parse(userID); err != nil {
+		return -1, ErrInvalidID
+	}
+	const q = `select count(*) from avatars where user_id=$1`
+	var count int
+	if err := db.GetContext(ctx, &count, q, userID); err != nil {
+		return -1, errors.Wrap(err, "selecting avatars")
+	}
+
+	return count, nil
+}
+
 // intPointer is a helper to get a *int from a int. It is in the tests package
 // because we normally don't want to deal with pointers to basic types but it's
 // useful in some tests.
 func intPointer(i int) *int {
 	return &i
+}
+
+// intPointer is a helper to get a *int from a int. It is in the tests package
+// because we normally don't want to deal with pointers to basic types but it's
+// useful in some tests.
+func stringPointer(s string) *string {
+	return &s
 }
