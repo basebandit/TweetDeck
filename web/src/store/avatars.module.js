@@ -37,13 +37,16 @@ export default {
       })
     },
     assignAvatars({ commit }, payload) {
-      const { token, assign } = payload
+      const { token, assign,router } = payload
       commit("assignAvatarStatus")
       AvatarService.assignAvatars(token, assign).then(response => {
         if (response.status === 200) {
           commit("assignAvatarSuccess", {
             message: "asigned avatars successfully"
           })
+          setTimeout(()=>{
+            router.go()
+          },500)
         }
       }).catch(err => {
         commit("assignAvatarFailure", { message: err.response.data.error })
