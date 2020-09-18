@@ -101,8 +101,19 @@ func main() {
 		Handler: api,
 	}
 
+	ticker := time.NewTicker(15 * time.Second)
+	stop := make(chan struct{})
 	go func(ctx context.Context, db *sqlx.DB, cfg *Config, l *log.Logger) {
-		twitterLookup(ctx, db, cfg, l)
+		for {
+			select {
+			case <-ticker.C:
+				twitterLookup(ctx, db, cfg, l)
+			case <-stop:
+				ticker.Stop()
+				return
+			}
+		}
+
 	}(ctx, db, cfg, logger)
 
 	go func() {
