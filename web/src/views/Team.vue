@@ -68,7 +68,12 @@
             ></v-text-field>
           </v-row>
         </v-card-text>
-        <v-data-table :headers="headers" :items="team" :search="search" @click:row="handleClick"></v-data-table>
+        <v-data-table :headers="headers" :items="team" :search="search" @click:row="handleClick">
+          <template v-slot:item.avatars="{ item }">
+            <v-chip :color="getColor(item.avatars)" dark>{{ item.avatars }}</v-chip>
+          </template>
+          <template v-slot:item.createdAt="{ item }">{{ item.createdAt | formatDate }}</template>
+        </v-data-table>
       </v-card>
     </v-container>
   </div>
@@ -120,6 +125,11 @@ export default {
     },
   },
   methods: {
+    getColor(avatars) {
+      if (avatars > 10) return "red";
+      else if (avatars > 20) return "orange";
+      else return "green";
+    },
     handleClick(item) {
       /**eslint-disable */
       console.log(item.id);
