@@ -406,6 +406,7 @@ export default {
       this.$store.dispatch("avatars/assignAvatars", {
         token: this.token,
         assign: payload,
+        router: this.$router,
       });
       /**eslint-disable */
       console.log(payload);
