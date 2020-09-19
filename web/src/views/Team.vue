@@ -69,11 +69,59 @@
           </v-row>
         </v-card-text>
         <v-data-table :headers="headers" :items="team" :search="search" @click:row="handleClick">
+          <template v-slot:item.firstname="props">
+            <v-edit-dialog
+              :return-value.sync="props.item.firstname"
+              @save="saveFirstname(props.item.id)"
+              @cancel="cancel"
+              @open="open"
+              @close="close"
+            >
+              {{ props.item.firstname }}
+              <template v-slot:input>
+                <v-text-field
+                  v-model="props.item.firstname"
+                  @change="editFirstname"
+                  :rules="[max25chars]"
+                  label="Edit"
+                  single-line
+                  counter
+                ></v-text-field>
+              </template>
+            </v-edit-dialog>
+          </template>
+          <template v-slot:item.lastname="props">
+            <v-edit-dialog
+              :return-value.sync="props.item.lastname"
+              @save="saveLastname(props.item.id)"
+              @cancel="cancel"
+              @open="open"
+              @close="close"
+            >
+              {{ props.item.lastname }}
+              <template v-slot:input>
+                <v-text-field
+                  v-model="props.item.lastname"
+                  @change="editLastname"
+                  :rules="[max25chars]"
+                  label="Edit"
+                  single-line
+                  counter
+                ></v-text-field>
+              </template>
+            </v-edit-dialog>
+          </template>
           <template v-slot:item.avatars="{ item }">
             <v-chip :color="getColor(item.avatars)" dark>{{ item.avatars }}</v-chip>
           </template>
           <template v-slot:item.createdAt="{ item }">{{ item.createdAt | formatDate }}</template>
         </v-data-table>
+        <v-snackbar v-model="snack" :timeout="3000" :color="snackColor">
+          {{ snackText }}
+          <template v-slot:action="{ attrs }">
+            <v-btn v-bind="attrs" text @click="snack = false">Close</v-btn>
+          </template>
+        </v-snackbar>
       </v-card>
     </v-container>
   </div>
@@ -84,6 +132,8 @@ export default {
   data() {
     return {
       search: "",
+      firstname: "",
+      lastname: "",
       headers: [
         {
           text: "Firstname",
@@ -100,6 +150,10 @@ export default {
       ],
       dialog: false,
       valid: true,
+      snack: false,
+      snackColor: "",
+      snackText: "",
+      max25chars: (v) => v.length <= 25 || "Input too long!",
       nameRules: [
         (v) => !!v || "Name is required",
         (v) => (v && v.length <= 15) || "Name must be less than 15 characters",
@@ -125,6 +179,12 @@ export default {
     },
   },
   methods: {
+    editFirstname(v) {
+      this.firstname = v;
+    },
+    editLastname(v) {
+      this.lastname = v;
+    },
     getColor(avatars) {
       if (avatars > 10) return "red";
       else if (avatars > 20) return "orange";
@@ -156,6 +216,45 @@ export default {
         this.newMember.lastname,
         this.newMember.Email
       );
+    },
+    saveFirstname(id) {
+      /**eslint-disable */
+      console.log("Firstname", this.firstname);
+      this.snack = true;
+      this.snackColor = "success";
+      this.snackText = "Data saved";
+      this.$store.dispatch("people/updateFirstname", {
+        token: this.token,
+        id,
+        firstname: this.firstname,
+        router: this.$router,
+      });
+    },
+    saveLastname(id) {
+      /**eslint-disable */
+      console.log("Lastname", this.lastname);
+      this.snack = true;
+      this.snackColor = "success";
+      this.snackText = "Data saved";
+      this.$store.dispatch("people/updateLastname", {
+        token: this.token,
+        id,
+        lastname: this.lastname,
+        router: this.$router,
+      });
+    },
+    cancel() {
+      this.snack = true;
+      this.snackColor = "error";
+      this.snackText = "Canceled";
+    },
+    open() {
+      this.snack = true;
+      this.snackColor = "info";
+      this.snackText = "Dialog opened";
+    },
+    close() {
+      console.log("Dialog closed");
     },
   },
 };
