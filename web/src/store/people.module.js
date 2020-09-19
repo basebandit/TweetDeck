@@ -7,6 +7,8 @@ export default {
     unassignedPeople: [],
     fetchAssignedPeople: false,
     fetchUnassignedPeople: false,
+    updatingFirstname:false,
+    updatingLastname: false,
     addPerson: false,
   },
 
@@ -15,7 +17,9 @@ export default {
     unassignedTeam: (state) => state.unassignedPeople,
     fetchingAssigned: (state) => state.fetchAssignedPeople,
     fetchingUnassigned: (state) => state.fetchUnassignedPeople,
-    creating: (state) => state.addPerson
+    creating: (state) => state.addPerson,
+    updatingFirstname:(state) => state.updatingFirstname,
+    updatingLastname:(state) => state.updatingLastname,
   },
 
   actions: {
@@ -66,6 +70,34 @@ export default {
       }).catch(err => {
         commit("addPersonFailure", { message: err.response.data.error })
       })
+    },
+    updateFirstname({commit},payload){
+      const {token,firstname,id,router} = payload
+      commit("updateFirstnameStatus")
+      PeopleService.updateFirstname(token,{id,firstname}).then(response =>{
+        if (response.status === 200){
+          commit("updateFirstnameSuccess",{message:"successfully changed firstname"})
+          setTimeout(()=>{
+            router.go()
+          },2000)
+        }
+      }).catch(err =>{
+        commit("updateFirstnameFailure",{message: err.response.data.error})
+      })
+    },
+    updateLastname({commit},payload){
+      const {token,lastname,id,router} = payload
+      commit("updateLastnameStatus")
+      PeopleService.updateLastname(token,{id,lastname}).then(response =>{
+        if (response.status === 200){
+          commit("updateLastnameSuccess",{message:"successfully changed lastname"})
+          setTimeout(()=>{
+            router.go()
+          },2000)
+        }
+      }).catch(err =>{
+        commit("updateLastnameFailure",{message: err.response.data.error})
+      })
     }
   },
   mutations: {
@@ -111,6 +143,33 @@ export default {
       state.addPerson = false
       /**eslint-disable */
       console.error(message)
+    },
+    updateFirstnameStatus(state){
+      state.updatingFirstnameStatus = true
+    },
+    updateFirstnameSuccess(state,payload){
+      const {message} = payload
+      state.updatingFirstnameStatus = false
+      /**eslint-disable */
+      console.log(message)
+    },
+    updateFirstnameFailure(state,payload){
+      const {message} = payload
+      state.updatingFirstnameStatus = false
+      /**eslint-disable */
+      console.log(message)
+    },
+    updateLastnameSuccess(state,payload){
+      const {message} = payload
+      state.updatingFirstnameStatus = false
+      /**eslint-disable */
+      console.log(message)
+    },
+    updateLastnameFailure(state,payload){
+      const {message} = payload
+      state.updatingFirstnameStatus = false
+      /**eslint-disable */
+      console.log(message)
     }
   }
 }
