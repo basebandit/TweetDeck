@@ -1,0 +1,6 @@
+web/
+vendor/
+.gitignore
+.git
+Makefile
+
