@@ -101,7 +101,7 @@ func main() {
 		Handler: api,
 	}
 
-	ticker := time.NewTicker(15 * time.Second)
+	ticker := time.NewTicker(24 * time.Hour)
 	stop := make(chan struct{})
 	go func(ctx context.Context, db *sqlx.DB, cfg *Config, l *log.Logger) {
 		for {
