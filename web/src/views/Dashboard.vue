@@ -130,14 +130,14 @@
 
 <script>
 // @ is an alias to /src
-
+import { mapGetters } from "vuex";
 export default {
   name: "Home",
   data() {
     return {
       stats: [
         { total: 560, icon: "mdi-account-supervisor", name: "avatars" },
-        { total: 289, icon: "mdi-twitter", name: "tweets" },
+        { total: 789, icon: "mdi-twitter", name: "tweets" },
         { total: 389, icon: "mdi-account-arrow-left", name: "followers" },
         { total: 459, icon: "mdi-account-arrow-right", name: "following" },
         { total: 897, icon: "mdi-thumb-up", name: "likes" },
@@ -200,7 +200,17 @@ export default {
       ],
     };
   },
+  mounted() {
+    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
+  },
   computed: {
+    ...mapGetters("people", { team: "assignedTeam" }),
+    token() {
+      return window.localStorage.getItem("user");
+    },
+    totals() {
+      return this.sum(this.team, "tweets");
+    },
     topWeeklyAvatarsByTweets() {
       let total = 0;
       this.topWeeklyAvatarTweets.forEach((avatar) => {
@@ -226,6 +236,17 @@ export default {
       );
 
       return obj;
+    },
+  },
+  methods: {
+    sum(arr, prop) {
+      var total = 0;
+      for (var i = 0, _len = arr.length; i < _len; i++) {
+        total += arr[i][prop];
+      }
+      /**eslint-disable*/
+      console.log(total);
+      return total;
     },
   },
 };
