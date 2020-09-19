@@ -1,19 +1,23 @@
 version: "3.7"
 services:
-  fupisha:
+  avatarlysis:
     build:
       context: .
     container_name: avatarlysis-backend
     depends_on:
       - postgres
+    env_file:
+      - env.sh
     command:
       [
-        "./wait-for-it.sh",
+        "sh",
+        "wait-for-it.sh",
         "postgres:5432",
         "--strict",
         "--timeout=300",
         "--",
-        "./avatarlysis",
+        "sh",
+        "run.sh",
       ]
     ports:
       - 8880:8880
