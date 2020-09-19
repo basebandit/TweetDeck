@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi"
 
+	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/business/data/avatar"
 
 	"go.opentelemetry.io/otel/api/global"
@@ -468,6 +469,48 @@ func (s *Server) handleAddMember(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	render.Respond(w, r, usr)
+}
+
+func (s *Server) handleUpdateMember(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	v, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	var uu user.UpdateUser
+	if err := json.NewDecoder(r.Body).Decode(&uu); err != nil {
+		s.log.Println(errors.Wrap(err, "updating: decoding user"))
+		render.Render(w, r, ErrBadRequest(err))
+		return
+	}
+
+	claims, ok := r.Context().Value(auth.Key).(auth.Claims)
+	if !ok {
+		s.log.Println("missing claims")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	uid := chi.URLParam(r, "id")
+	id, err := user.Decode(uid)
+	if err != nil {
+		s.log.Println(err)
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	if err := user.Update(ctx, claims, s.db, id.String(), uu, v.Now); err != nil {
+		s.log.Println(err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Respond(w, r, http.NoBody)
 }
 
 // func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
