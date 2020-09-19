@@ -10,6 +10,7 @@ const (
 
 	peopleAssigned   = "/api/people/assigned"
 	peopleUnassigned = "/api/people/unassigned"
+	personUpdate     = "/api/people/{id}/edit"
 	new              = "/api/people/new"
 
 	signup = "/api/signup"
@@ -37,6 +38,7 @@ func (s *Server) routes() {
 		r.Get(peopleAssigned, s.handleAssignedPeople)
 		r.Get(peopleUnassigned, s.handleUnassignedPeople)
 		r.Post(new, s.handleAddMember)
+		r.Put(personUpdate, s.handleUpdateMember)
 	})
 
 	//==============Unauthenticated Routes===============
