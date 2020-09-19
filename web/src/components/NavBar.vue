@@ -31,7 +31,9 @@
           <v-avatar size="100">
             <img src="/avatar-1.png" alt />
           </v-avatar>
-          <p class="white--text subheading mt-1">The Basebandit</p>
+          <p class="white--text subheading mt-1">
+            <v-icon small left class="white--text">mdi-cog-outline</v-icon>The Basebandit
+          </p>
           <v-col class="mt-4 mb-3">
             <Popup />
           </v-col>
