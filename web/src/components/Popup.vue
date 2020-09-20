@@ -1,6 +1,6 @@
 <template>
   <v-row justify="center">
-    <v-dialog max-width="600px" v-model="dialog">
+    <v-dialog max-width="600px" v-model="uploading">
       <Notification :message="snackbarMessage" :snackbar="snackbar" :type="snackbarType" />
       <template v-slot:activator="{on,attrs}">
         <v-btn color="success" v-on="on" v-bind="attrs">
@@ -27,8 +27,9 @@
   </v-row>
 </template>
 <script>
-import AvatarService from "@/services/AvatarService";
+// import AvatarService from "@/services/AvatarService";
 import Notification from "@/components/Notification";
+import { mapGetters } from "vuex";
 export default {
   name: "Popup",
   components: {
@@ -38,38 +39,25 @@ export default {
     return {
       handle: "",
       file: [],
-      dialog: false,
+      dialog: this.uploading,
       snackbarType: "",
       snackbarMessage: "",
       snackbar: false,
       // bio: "",
     };
   },
+  computed: {
+    token() {
+      return window.localStorage.getItem("user");
+    },
+    ...mapGetters("avatars", ["uploading"]),
+  },
   methods: {
-    async upload() {
+    upload() {
       let formData = new FormData();
       formData.append("avatars", this.file);
-      try {
-        const token = window.localStorage.getItem("user");
-        const response = await AvatarService.uploadAvatars(token, formData);
-        this.snackbarType = "success";
-        this.snackbarmessage = "Uploaded avatars successfully";
-        this.snackbar = true;
-        setTimeout(() => {
-          this.dialog = false;
-        }, 2000);
-        /**eslint-disable */
-        console.log(response.data.status, response.data);
-      } catch (err) {
-        this.snackbarType = "error";
-        this.snackbarMessage = err.response.data.error;
-        this.snackbar = true;
-        setTimeout(() => {
-          this.dialog = false;
-        }, 2000);
-        /**eslint-disable */
-        console.log(err.response.data, err.response.data.error);
-      }
+
+      this.$store.dispatch("avatars/upload", { token: this.token, formData });
     },
     download() {
       let csvContent = "usernames\n";
