@@ -7,12 +7,14 @@ export default {
     fetchAvatars: false,
     assignAvatars: false,
     avatarsByUser: false,
+    uploadAvatars:false,
     userAvatars: []
   },
 
   getters: {
     avatars: (state) => state.avatars,
     fetching: (state) => state.fetchAvatars,
+    uploading:(state) => state.uploadAvatars,
     assigning: (state) => state.assignAvatars,
     fetchAvatarsByUser: (state) => state.avatarsByUser,
     userAvatars: (state) => state.userAvatars
@@ -36,6 +38,18 @@ export default {
         })
       })
     },
+    upload({commit},payload) {
+     
+   const {token,formData} = payload
+        commit("uploadAvatarStatus")
+         AvatarService.uploadAvatars(token,formData).then(response=>{
+          if (response.status === 201){
+              commit("uploadAvatarSuccess",{message:"avatars uploaded successfully"})
+          } 
+        }).catch(err => {
+          commit("updateAvatarFailure",{message:err.response.data.error})
+        })
+      },
     assignAvatars({ commit }, payload) {
       const { token, assign,router } = payload
       commit("assignAvatarStatus")
@@ -111,6 +125,21 @@ export default {
       state.avatarsByUser = false
       /**eslint-disable */
       console.log(message)
+    },
+    uploadAvatarStatus(state){
+      state.uploadAvatars = true
+    },
+    uploadAvatarSuccess(state,payload){
+      const {message} = payload
+      state.uploadAvatars = false
+      /**eslint-disable */
+      console.log(message)
+    },
+    uploadAvatarFailure(state,payload){
+      const {message} = payload
+      state.uploadAvatars = false
+      /**eslint-disable */
+      console.error(message)
     }
   },
 };
