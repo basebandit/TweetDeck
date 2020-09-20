@@ -72,6 +72,7 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, na []NewAvatar, now time.T
 	}
 
 	q = q[:len(q)-1] //remove trailing ","
+	q += "ON CONFLICT DO NOTHING"
 
 	if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
 		return errors.Wrap(err, "inserting multiple avatars")
