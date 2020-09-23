@@ -45,14 +45,11 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.createmultiple")
 	defer span.End()
 
-	q := `INSERT INTO profiles(id,avatar_id,followers,following,tweets,likes,bio,name,twitter_id,profile_image_url,last_tweet_time,join_date,created_at,updated_at) VALUES`
+	q := `INSERT INTO profiles(id,avatar_id,followers,"following",tweets,likes,bio,"name",twitter_id,profile_image_url,last_tweet_time,join_date,created_at,updated_at) VALUES `
 
 	insertParams := []interface{}{}
 
-	for i, p := range np {
-		p1 := i * 14
-
-		q += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),", p1+1, p1+2, p1+3, p1+4, p1+5, p1+6, p1+7, p1+8, p1+9, p1+10, p1+11, p1+12, p1+13, p1+14)
+	if len(np) > 0 {
 
 		var (
 			avatarID        string
@@ -68,59 +65,65 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 			joinDate        string
 		)
 
-		if p.Following != nil {
-			following = *p.Following
-		}
-		if p.Followers != nil {
-			followers = *p.Following
+		for i, p := range np {
+			p1 := i * 14
+
+			if p.Following != nil {
+				following = *p.Following
+			}
+			if p.Followers != nil {
+				followers = *p.Followers
+			}
+
+			if p.Tweets != nil {
+				tweets = *p.Tweets
+			}
+
+			if p.Bio != nil {
+				bio = *p.Bio
+			}
+
+			if p.TwitterID != nil {
+				twitterID = *p.TwitterID
+			}
+
+			if p.Likes != nil {
+				likes = *p.Likes
+			}
+
+			if p.JoinDate != nil {
+				joinDate = *p.JoinDate
+			}
+
+			if p.Name != nil {
+				name = *p.Name
+			}
+
+			if p.AvatarID != nil {
+				avatarID = *p.AvatarID
+			}
+			if p.LastTweetTime != nil {
+				lastTweetTime = *p.LastTweetTime
+			}
+
+			if p.ProfileImageURL != nil {
+				profileImageURL = *p.ProfileImageURL
+			}
+
+			p.CreatedAt = now
+			p.UpdatedAt = now
+
+			q += fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d),", p1+1, p1+2, p1+3, p1+4, p1+5, p1+6, p1+7, p1+8, p1+9, p1+10, p1+11, p1+12, p1+13, p1+14)
+
+			insertParams = append(insertParams, p.ID, avatarID, followers, following, tweets, likes, bio, name, twitterID, profileImageURL, lastTweetTime, joinDate, p.CreatedAt, p.UpdatedAt)
+
 		}
 
-		if p.Tweets != nil {
-			tweets = *p.Tweets
-		}
+		q = q[:len(q)-1] //remove trailing ","
 
-		if p.Bio != nil {
-			bio = *p.Bio
+		if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
+			return errors.Wrap(err, "inserting multiple profiles")
 		}
-
-		if p.TwitterID != nil {
-			twitterID = *p.TwitterID
-		}
-
-		if p.Likes != nil {
-			likes = *p.Likes
-		}
-
-		if p.JoinDate != nil {
-			joinDate = *p.JoinDate
-		}
-
-		if p.Name != nil {
-			name = *p.Name
-		}
-
-		if p.AvatarID != nil {
-			avatarID = *p.AvatarID
-		}
-		if p.LastTweetTime != nil {
-			lastTweetTime = *p.LastTweetTime
-		}
-
-		if p.ProfileImageURL != nil {
-			profileImageURL = *p.ProfileImageURL
-		}
-
-		p.CreatedAt = now
-		p.UpdatedAt = now
-
-		insertParams = append(insertParams, p.ID, avatarID, followers, following, tweets, likes, bio, name, twitterID, profileImageURL, lastTweetTime, joinDate, p.CreatedAt, p.UpdatedAt)
 	}
-
-	q = q[:len(q)-1] //remove trailing ","
-
-	if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
-		return errors.Wrap(err, "inserting multiple profiles")
-	}
-
 	return nil
 }
