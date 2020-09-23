@@ -45,9 +45,12 @@ func (t *TwitterService) Lookup(ctx context.Context, l *log.Logger, usernames []
 	log.Println("twitter lookup started")
 
 	users, tres, err := client.Users.Lookup(userLookupParams)
-	if err != nil {
-		return nil, errors.Wrap(err, "fetching twitter profiles")
+	if tres.StatusCode != 200 {
+		log.Printf("fetching twitter profiles :%s res : [%v]\n", err, tres.StatusCode)
 	}
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "fetching twitter profiles")
+	// }
 
 	log.Printf("twitter usernames lookup finished successful : res [%v]\n", tres.StatusCode)
 	return users, nil
