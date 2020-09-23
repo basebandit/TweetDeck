@@ -51,7 +51,7 @@ export default {
         })
       },
     assignAvatars({ commit }, payload) {
-      const { token, assign,router } = payload
+      const { token, assign,router} = payload
       commit("assignAvatarStatus")
       AvatarService.assignAvatars(token, assign).then(response => {
         if (response.status === 200) {
