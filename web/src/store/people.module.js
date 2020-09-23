@@ -58,11 +58,14 @@ export default {
     //   })
     // },
     addPerson({ commit }, payload) {
-      const { token, person, router } = payload
+      const { token, person, refs,router } = payload
       commit("addPersonStatus")
       PeopleService.addPerson(token, person).then(response => {
+        /**eslint-disable */
+        console.log("NEW_MEMBER",person)
         if (response.status === 201) {
           commit("addPersonSuccess", { message: "added new member successfully" })
+          refs.form.reset();
           setTimeout(() => {
             router.go()//refresh page to see added member
           })
