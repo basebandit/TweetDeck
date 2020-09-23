@@ -81,9 +81,9 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, na []NewAvatar, now time.T
 	return nil
 }
 
-//Update modifies data about an existing Avatar.It will error if the specified Id is
+//UpdateUserID modifies data about an existing Avatar.It will error if the specified Id is
 //invalid or does not reference an existing Avatar.
-func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now time.Time) error {
+func UpdateUserID(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now time.Time) error {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.update")
 	defer span.End()
 
@@ -118,11 +118,57 @@ func Update(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now ti
 
 	const q = `UPDATE avatars SET
 	"user_id" = $2,
-	"username" = $3,
-	"updated_at" = $4
+	"updated_at" = $3
 	WHERE id = $1`
 
-	if _, err := db.ExecContext(ctx, q, a.ID, *a.UserID, a.Username, a.UpdatedAt); err != nil {
+	if _, err := db.ExecContext(ctx, q, a.ID, *a.UserID, a.UpdatedAt); err != nil {
+		return errors.Wrap(err, "updating avatar")
+	}
+
+	return nil
+}
+
+//UpdateUsername modifies data about an existing Avatar.It will error if the specified Id is
+//invalid or does not reference an existing Avatar.
+func UpdateUsername(ctx context.Context, db *sqlx.DB, id string, ua UpdateAvatar, now time.Time) error {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.update")
+	defer span.End()
+
+	if _, err := uuid.Parse(id); err != nil {
+		return ErrInvalidID
+	}
+
+	a, err := GetByID(ctx, db, id)
+	if err != nil {
+		return err
+	}
+
+	if ua.Username != nil {
+		a.Username = *ua.Username
+	}
+
+	if ua.UserID != nil {
+
+		userID, err := user.Decode(*ua.UserID)
+		if err != nil {
+			return err
+		}
+
+		if _, err := uuid.Parse(userID.String()); err != nil {
+			return ErrInvalidID
+		}
+
+		a.UserID = stringPointer(userID.String())
+	}
+
+	a.UpdatedAt = now
+
+	const q = `UPDATE avatars SET
+	"username" = $2,
+	"updated_at" = $3
+	WHERE id = $1`
+
+	if _, err := db.ExecContext(ctx, q, a.ID, a.Username, a.UpdatedAt); err != nil {
 		return errors.Wrap(err, "updating avatar")
 	}
 
@@ -305,7 +351,7 @@ func GetByUserID(ctx context.Context, db *sqlx.DB, userID string) ([]Avatar, err
 	return avatars, nil
 }
 
-//AggregateAvatarByUserID finds the avatars assigned to the given userID ands adds up the totals of likes,following
+//AggregateAvatarByUserID finds the avatars assigned to the given userID and adds up the totals of likes,following
 //followers, tweets fields.
 func AggregateAvatarByUserID(ctx context.Context, db *sqlx.DB, userID string) (Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getbyuserid")
@@ -374,6 +420,8 @@ func AggregateAvatarByUserID(ctx context.Context, db *sqlx.DB, userID string) (A
 	avatar.Tweets = intPointer(tweets)
 	avatar.Followers = intPointer(followers)
 	avatar.Following = intPointer(following)
+
+	fmt.Printf("Username: %s,Following: %d, Followers%d\n", avatar.Username, *avatar.Following, *avatar.Followers)
 
 	return avatar, nil
 }
