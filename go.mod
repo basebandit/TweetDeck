@@ -13,9 +13,11 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/lib/pq v1.0.0
 	github.com/pkg/errors v0.8.1
+	github.com/robfig/cron/v3 v3.0.0
 	go.mongodb.org/mongo-driver v1.3.5
 	go.opentelemetry.io/otel v0.11.0
 	golang.org/x/crypto v0.0.0-20190530122614-20be4c3c3ed5
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
+	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b // indirect
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
+	golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e // indirect
 )
