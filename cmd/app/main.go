@@ -13,17 +13,17 @@ import (
 	"strings"
 	"time"
 
-	"ekraal.org/avatarlysis/business/data/profile"
+	service "ekraal.org/avatarlysis/foundation/service/twitter"
+	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel/api/global"
 
-	service "ekraal.org/avatarlysis/foundation/service/twitter"
-
 	"ekraal.org/avatarlysis/business/data/avatar"
+	"ekraal.org/avatarlysis/business/data/profile"
 
 	"ekraal.org/avatarlysis/api"
 	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/foundation/database"
-
+	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
@@ -46,11 +46,13 @@ type Config struct {
 	PrivateKeyFile        string
 	KeyID                 string
 	Algorithm             string
+	MaxQueue              int
+	MaxWorkers            int
 }
 
 func init() {
 	//Lets confirm that all env vars are set
-	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" || os.Getenv("AVATARLYSIS_DB_USER") == "" || os.Getenv("AVATARLYSIS_DB_PASSWORD") == "" || os.Getenv("AVATARLYSIS_DB_NAME") == "" || os.Getenv("AVATARLYSIS_DB_HOST") == "" || os.Getenv("AVATARLYSIS_DB_DISABLE_TLS") == "" || os.Getenv("AVATARLYSIS_PRIVATE_KEY") == "" || os.Getenv("AVATARLYSIS_KEY_ID") == "" || os.Getenv("AVATARLYSIS_ALGORITHM") == "" {
+	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" || os.Getenv("AVATARLYSIS_DB_USER") == "" || os.Getenv("AVATARLYSIS_DB_PASSWORD") == "" || os.Getenv("AVATARLYSIS_DB_NAME") == "" || os.Getenv("AVATARLYSIS_DB_HOST") == "" || os.Getenv("AVATARLYSIS_DB_DISABLE_TLS") == "" || os.Getenv("AVATARLYSIS_PRIVATE_KEY") == "" || os.Getenv("AVATARLYSIS_KEY_ID") == "" || os.Getenv("AVATARLYSIS_ALGORITHM") == "" || os.Getenv("MAX_QUEUE") == "" || os.Getenv("MAX_WORKERS") == "" {
 		log.Fatal("there is a missing config field")
 	}
 }
@@ -101,20 +103,21 @@ func main() {
 		Handler: api,
 	}
 
-	ticker := time.NewTicker(24 * time.Hour)
-	stop := make(chan struct{})
-	go func(ctx context.Context, db *sqlx.DB, cfg *Config, l *log.Logger) {
-		for {
-			select {
-			case <-ticker.C:
-				twitterLookup(ctx, db, cfg, l)
-			case <-stop:
-				ticker.Stop()
-				return
-			}
-		}
+	// s1 := gocron.NewScheduler(time.UTC)
 
-	}(ctx, db, cfg, logger)
+	// if _, err := s1.Every(0).Day().At("10:14").Do(twitterLookup, ctx, db, cfg, logger); err != nil {
+	// 	logger.Println(err)
+	// }
+	// s1.StartAsync()
+
+	// pass in your specific zone name, using Kenya/Nairobi as example
+	c := cron.New()
+	c.AddFunc("CRON_TZ=Africa/Nairobi 35 10 * * *", func() {
+		if err := twitterLookup(ctx, db, cfg, logger); err != nil {
+			logger.Println(err)
+		}
+	})
+	c.Start()
 
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
@@ -133,6 +136,23 @@ func main() {
 	}
 
 	log.Println("Avatarlysis API server stopped gracefully")
+}
+
+func chunk(users []string) [][]string {
+	var divided [][]string
+	numCPU := 10
+	chunkSize := (len(users) + numCPU - 1) / numCPU
+
+	for i := 0; i < len(users); i += chunkSize {
+		end := i + chunkSize
+
+		if end > len(users) {
+			end = len(users)
+		}
+
+		divided = append(divided, users[i:end])
+	}
+	return divided
 }
 
 func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logger) error {
@@ -157,10 +177,27 @@ func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logge
 		unames = append(unames, av.Username)
 	}
 
-	users, err := twitter.Lookup(ctx, log, unames)
-	if err != nil {
-		return err
+	// fmt.Printf("%+v\n", unames)
+	//Lets implement our queueing here
+	chunks := chunk(unames)
+
+	for _, chunk := range chunks {
+
+		users, err := twitter.Lookup(ctx, log, chunk)
+		if err != nil {
+			return err
+		}
+
+		if err := profiler(ctx, twitter, dict, users, db); err != nil {
+			return err
+		}
+
 	}
+
+	return nil
+}
+
+func profiler(ctx context.Context, twitter *service.TwitterService, dict map[string]string, users []twitter.User, db *sqlx.DB) error {
 	var np profile.NewProfile
 	var nps []profile.NewProfile
 	now := time.Now()
@@ -252,6 +289,18 @@ func env() *Config {
 		os.Exit(1)
 	}
 
+	mw, err := strconv.Atoi(os.Getenv("MAX_WORKERS"))
+	if err != nil {
+		log.Printf("env: %s", errors.Wrap(err, "parsing MAX_WORKERS environment config"))
+		os.Exit(1)
+	}
+
+	mq, err := strconv.Atoi(os.Getenv("MAX_QUEUE"))
+	if err != nil {
+		log.Printf("env: %s", errors.Wrap(err, "parsing MAX_QUEUE environment config"))
+		os.Exit(1)
+	}
+
 	cfg := Config{
 		TwitterAccessSecret:   os.Getenv("CONSUMER_SECRET"),
 		TwitterAccessToken:    os.Getenv("ACCESS_TOKEN"),
@@ -266,6 +315,8 @@ func env() *Config {
 		Algorithm:             os.Getenv("AVATARLYSIS_ALGORITHM"),
 		PrivateKeyFile:        os.Getenv("AVATARLYSIS_PRIVATE_KEY"),
 		KeyID:                 os.Getenv("AVATARLYSIS_KEY_ID"),
+		MaxWorkers:            mw,
+		MaxQueue:              mq,
 	}
 
 	return &cfg
