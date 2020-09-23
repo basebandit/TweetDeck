@@ -52,8 +52,12 @@
 
                 <v-card-actions>
                   <v-spacer></v-spacer>
-                  <v-btn color="blue darken-1" text @click="dialog = false">Cancel</v-btn>
-                  <v-btn color="blue darken-1" text @click="addMember">Save</v-btn>
+                  <v-btn color="blue darken-1" text @click="dialog = false"
+                    >Cancel</v-btn
+                  >
+                  <v-btn color="blue darken-1" text @click="addMember"
+                    >Save</v-btn
+                  >
                 </v-card-actions>
               </v-card>
             </v-dialog>
@@ -68,7 +72,12 @@
             ></v-text-field>
           </v-row>
         </v-card-text>
-        <v-data-table :headers="headers" :items="team" :search="search" @click:row="handleClick">
+        <v-data-table
+          :headers="headers"
+          :items="team"
+          :search="search"
+          @click:row="handleClick"
+        >
           <template v-slot:item.firstname="props">
             <v-edit-dialog
               :return-value.sync="props.item.firstname"
@@ -112,9 +121,13 @@
             </v-edit-dialog>
           </template>
           <template v-slot:item.avatars="{ item }">
-            <v-chip :color="getColor(item.avatars)" dark>{{ item.avatars }}</v-chip>
+            <v-chip :color="getColor(item.avatars)" dark>{{
+              item.avatars
+            }}</v-chip>
           </template>
-          <template v-slot:item.createdAt="{ item }">{{ item.createdAt | formatDate }}</template>
+          <template v-slot:item.createdAt="{ item }">{{
+            item.createdAt | formatDate
+          }}</template>
         </v-data-table>
         <v-snackbar v-model="snack" :timeout="3000" :color="snackColor">
           {{ snackText }}
@@ -201,21 +214,15 @@ export default {
         let person = {
           firstname: this.newMember.firstname,
           lastname: this.newMember.lastname,
-          email: this.newMember.Email,
+          email: this.newMember.email,
         };
-
         this.$store.dispatch("people/addPerson", {
           token: this.token,
           person,
           router: this.$router,
+          refs: this.$refs,
         });
       }
-      /**eslint-disable */
-      console.log(
-        this.newMember.firstname,
-        this.newMember.lastname,
-        this.newMember.Email
-      );
     },
     saveFirstname(id) {
       /**eslint-disable */
