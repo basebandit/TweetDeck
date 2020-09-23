@@ -170,10 +170,10 @@ export default {
     };
   },
   mounted() {
-    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
+    this.$store.dispatch("people/getPeople", { token: this.token });
   },
   computed: {
-    ...mapGetters("people", { team: "assignedTeam" }),
+    ...mapGetters("people", ["team"]),
     token() {
       return window.localStorage.getItem("user");
     },
