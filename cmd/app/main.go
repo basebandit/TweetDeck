@@ -52,7 +52,7 @@ type Config struct {
 
 func init() {
 	//Lets confirm that all env vars are set
-	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" || os.Getenv("AVATARLYSIS_DB_USER") == "" || os.Getenv("AVATARLYSIS_DB_PASSWORD") == "" || os.Getenv("AVATARLYSIS_DB_NAME") == "" || os.Getenv("AVATARLYSIS_DB_HOST") == "" || os.Getenv("AVATARLYSIS_DB_DISABLE_TLS") == "" || os.Getenv("AVATARLYSIS_PRIVATE_KEY") == "" || os.Getenv("AVATARLYSIS_KEY_ID") == "" || os.Getenv("AVATARLYSIS_ALGORITHM") == "" || os.Getenv("MAX_QUEUE") == "" || os.Getenv("MAX_WORKERS") == "" {
+	if os.Getenv("CONSUMER_SECRET") == "" || os.Getenv("CONSUMER_KEY") == "" || os.Getenv("ACCESS_TOKEN") == "" || os.Getenv("ACCESS_SECRET") == "" || os.Getenv("TOKEN_URL") == "" || os.Getenv("AVATARLYSIS_DB_USER") == "" || os.Getenv("AVATARLYSIS_DB_PASSWORD") == "" || os.Getenv("AVATARLYSIS_DB_NAME") == "" || os.Getenv("AVATARLYSIS_DB_HOST") == "" || os.Getenv("AVATARLYSIS_DB_DISABLE_TLS") == "" || os.Getenv("AVATARLYSIS_PRIVATE_KEY") == "" || os.Getenv("AVATARLYSIS_KEY_ID") == "" || os.Getenv("AVATARLYSIS_ALGORITHM") == "" {
 		log.Fatal("there is a missing config field")
 	}
 }
@@ -289,18 +289,6 @@ func env() *Config {
 		os.Exit(1)
 	}
 
-	mw, err := strconv.Atoi(os.Getenv("MAX_WORKERS"))
-	if err != nil {
-		log.Printf("env: %s", errors.Wrap(err, "parsing MAX_WORKERS environment config"))
-		os.Exit(1)
-	}
-
-	mq, err := strconv.Atoi(os.Getenv("MAX_QUEUE"))
-	if err != nil {
-		log.Printf("env: %s", errors.Wrap(err, "parsing MAX_QUEUE environment config"))
-		os.Exit(1)
-	}
-
 	cfg := Config{
 		TwitterAccessSecret:   os.Getenv("CONSUMER_SECRET"),
 		TwitterAccessToken:    os.Getenv("ACCESS_TOKEN"),
@@ -315,8 +303,6 @@ func env() *Config {
 		Algorithm:             os.Getenv("AVATARLYSIS_ALGORITHM"),
 		PrivateKeyFile:        os.Getenv("AVATARLYSIS_PRIVATE_KEY"),
 		KeyID:                 os.Getenv("AVATARLYSIS_KEY_ID"),
-		MaxWorkers:            mw,
-		MaxQueue:              mq,
 	}
 
 	return &cfg
