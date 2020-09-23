@@ -3,60 +3,60 @@ import PeopleService from "@/services/PeopleService"
 export default {
   namespaced: true,
   state: {
-    assignedPeople: [],
-    unassignedPeople: [],
-    fetchAssignedPeople: false,
-    fetchUnassignedPeople: false,
+    people: [],
+    // unassignedPeople: [],
+    fetchPeople: false,
+    // fetchUnassignedPeople: false,
     updatingFirstname:false,
     updatingLastname: false,
     addPerson: false,
   },
 
   getters: {
-    assignedTeam: (state) => state.assignedPeople,
-    unassignedTeam: (state) => state.unassignedPeople,
-    fetchingAssigned: (state) => state.fetchAssignedPeople,
-    fetchingUnassigned: (state) => state.fetchUnassignedPeople,
+    team: (state) => state.people,
+    // unassignedTeam: (state) => state.unassignedPeople,
+    fetchingPeople: (state) => state.fetchAssignedPeople,
+    // fetchingUnassigned: (state) => state.fetchUnassignedPeople,
     creating: (state) => state.addPerson,
     updatingFirstname:(state) => state.updatingFirstname,
     updatingLastname:(state) => state.updatingLastname,
   },
 
   actions: {
-    getAssignedPeople({ commit }, payload) {
+    getPeople({ commit }, payload) {
       const { token } = payload
-      commit("asPeopleFetchStatus")
-      PeopleService.getAssignedPeople(token).then(response => {
+      commit("peopleFetchStatus")
+      PeopleService.getPeople(token).then(response => {
         setTimeout(() => {
           if (response.status === 200) {
-            commit("asPeopleFetchSuccess", {
+            commit("peopleFetchSuccess", {
               people: response.data,
             })
           }
         }, 500)
       }).catch(err => {
-        commit("asPeopleFetchFailure", {
+        commit("peopleFetchFailure", {
           message: err.response.data.error
         })
       })
     },
-    getUnassignedPeople({ commit }, payload) {
-      const { token } = payload
-      commit("usPeopleFetchStatus")
-      PeopleService.getUnassignedPeople(token).then(response => {
-        setTimeout(() => {
-          if (response.status === 200) {
-            commit("usPeopleFetchSuccess", {
-              people: response.data,
-            })
-          }
-        }, 500)
-      }).catch(err => {
-        commit("usPeopleFetchFailure", {
-          message: err.response.data.error
-        })
-      })
-    },
+    // getUnassignedPeople({ commit }, payload) {
+    //   const { token } = payload
+    //   commit("usPeopleFetchStatus")
+    //   PeopleService.getUnassignedPeople(token).then(response => {
+    //     setTimeout(() => {
+    //       if (response.status === 200) {
+    //         commit("usPeopleFetchSuccess", {
+    //           people: response.data,
+    //         })
+    //       }
+    //     }, 500)
+    //   }).catch(err => {
+    //     commit("usPeopleFetchFailure", {
+    //       message: err.response.data.error
+    //     })
+    //   })
+    // },
     addPerson({ commit }, payload) {
       const { token, person, router } = payload
       commit("addPersonStatus")
@@ -101,31 +101,31 @@ export default {
     }
   },
   mutations: {
-    usPeopleFetchStatus(state) {
-      state.fetchUnassignedPeople = true;
+    // usPeopleFetchStatus(state) {
+    //   state.fetchUnassignedPeople = true;
+    // },
+    // usPeopleFetchSuccess(state, payload) {
+    //   const { people } = payload
+    //   state.fetchUnassignedPeople = false
+    //   state.unassignedPeople = people
+    // },
+    // usPeopleFetchFailure(state, payload) {
+    //   const { message } = payload
+    //   state.fetchUnasignedPeople = false
+    //   /**eslint-disable */
+    //   console.error("usPeopleFetchFailure", message)
+    // },
+    peopleFetchStatus(state) {
+      state.fetchPeople = true;
     },
-    usPeopleFetchSuccess(state, payload) {
+    peopleFetchSuccess(state, payload) {
       const { people } = payload
-      state.fetchUnassignedPeople = false
-      state.unassignedPeople = people
+      state.fetchPeople = false
+      state.people = people
     },
-    usPeopleFetchFailure(state, payload) {
+    peopleFetchFailure(state, payload) {
       const { message } = payload
-      state.fetchUnasignedPeople = false
-      /**eslint-disable */
-      console.error("usPeopleFetchFailure", message)
-    },
-    asPeopleFetchStatus(state) {
-      state.fetchAssignedPeople = true;
-    },
-    asPeopleFetchSuccess(state, payload) {
-      const { people } = payload
-      state.fetchAssignedPeople = false
-      state.assignedPeople = people
-    },
-    asPeopleFetchFailure(state, payload) {
-      const { message } = payload
-      state.fetchAssignedPeople = false
+      state.fetchPeople = false
       /**eslint-disable */
       console.error("asPeopleFetchFailure", message)
     },
