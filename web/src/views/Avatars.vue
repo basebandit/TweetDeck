@@ -291,7 +291,7 @@
                     <v-list-item
                       v-for="(number, index) in avatarsPerPageArray"
                       :key="index"
-                      @click="updateItemsPerPage(number)"
+                      @click="updateAvatarsPerPage(number)"
                     >
                       <v-list-item-title>{{ number }}</v-list-item-title>
                     </v-list-item>
@@ -332,16 +332,16 @@ export default {
       selectedAvatarsIDs: [],
       assignDialog: false,
       assignee: "",
-      assigneeID: "",
+      assigneeID: [],
     };
   },
   mounted() {
     this.$store.dispatch("avatars/getAvatars", { token: this.token });
-    this.$store.dispatch("people/getUnassignedPeople", { token: this.token });
+    this.$store.dispatch("people/getPeople", { token: this.token });
   },
   computed: {
     ...mapGetters("avatars", ["avatars", "fetching"]),
-    ...mapGetters("people", { team: "unassignedTeam" }),
+    ...mapGetters("people", ["team"]),
 
     token() {
       return window.localStorage.getItem("user");
@@ -357,7 +357,6 @@ export default {
       const names = [];
       this.team.forEach((member) => {
         names.push(member.firstname + " " + member.lastname);
-        this.assigneeID = member.id;
       });
 
       return names;
@@ -391,13 +390,19 @@ export default {
       e(this);
     },
     assignAvatar() {
-      /**eslint-disable */
-      console.log(
-        "ASSIGNED USER",
-        this.assignee,
-        this.assigneeID,
-        this.selectedAvatarsIDs
-      );
+      this.team.forEach((member) => {
+        let name = member.firstname + " " + member.lastname;
+        if (name === this.assignee) {
+          this.assigneeID = member.id;
+        }
+      });
+      // /**eslint-disable */
+      // console.log(
+      //   "ASSIGNED USER",
+      //   this.assignee,
+      //   this.assigneeID,
+      //   this.selectedAvatarsIDs
+      // );
       this.assignDialog = false;
       let payload = {
         userID: this.assigneeID,
