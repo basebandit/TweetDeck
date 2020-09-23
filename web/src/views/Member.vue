@@ -133,7 +133,7 @@
 
             <template v-slot:default="props">
               <v-row>
-                <v-col v-for="item in props.items" :key="item.username">
+                <v-col v-for="item in props.items" :key="item.username" cols="12" md="3" sm="8">
                   <v-card class="ma-4" align="center">
                     <v-responsive class="pt-4">
                       <v-avatar size="100" class="grey lighten-2">
@@ -235,14 +235,14 @@ export default {
     };
   },
   mounted() {
-    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
+    this.$store.dispatch("people/getPeople", { token: this.token });
     this.$store.dispatch("avatars/getAvatarsByUser", {
       token: this.token,
       id: this.id,
     });
   },
   computed: {
-    ...mapGetters("people", { team: "assignedTeam" }),
+    ...mapGetters("people", ["team"]),
     ...mapGetters("avatars", { avatars: "userAvatars" }),
     token() {
       return window.localStorage.getItem("user");
