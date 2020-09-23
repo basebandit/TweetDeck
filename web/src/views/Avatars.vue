@@ -17,10 +17,12 @@
                 class="pa-5"
                 extended
                 flat
-                style="position: -webkit-sticky;
-            position: sticky;
-            top: 4rem;
-            z-index:1;"
+                style="
+                  position: -webkit-sticky;
+                  position: sticky;
+                  top: 4rem;
+                  z-index: 1;
+                "
               >
                 <v-text-field
                   v-model="search"
@@ -34,7 +36,12 @@
 
                   <v-spacer></v-spacer>
 
-                  <v-dialog v-model="assignDialog" persistent v-if="showAssign" max-width="600px">
+                  <v-dialog
+                    v-model="assignDialog"
+                    persistent
+                    v-if="showAssign"
+                    max-width="600px"
+                  >
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn
                         class="ma-2"
@@ -44,7 +51,8 @@
                         v-bind="attrs"
                         slot="activator"
                       >
-                        <v-icon small left>mdi-account-multiple-plus</v-icon>Assign
+                        <v-icon small left>mdi-account-multiple-plus</v-icon
+                        >Assign
                       </v-btn>
                     </template>
 
@@ -68,8 +76,19 @@
                       </v-card-text>
                       <v-card-actions>
                         <v-spacer></v-spacer>
-                        <v-btn color="blue darken-1" text @click="assignDialog = false">Close</v-btn>
-                        <v-btn color="blue darken-1" text @click="assignAvatar">Assign</v-btn>
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          @click="assignDialog = false"
+                          >Close</v-btn
+                        >
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          :loading="assigning"
+                          @click="assignAvatar"
+                          >Assign</v-btn
+                        >
                       </v-card-actions>
                     </v-card>
                   </v-dialog>
@@ -88,14 +107,18 @@
                         v-on="on"
                         v-bind="attrs"
                         slot="activator"
+                        :loading="assigning"
                       >
-                        <v-icon small left>mdi-account-multiple-plus</v-icon>Reassign
+                        <v-icon small left>mdi-account-multiple-plus</v-icon
+                        >Reassign
                       </v-btn>
                     </template>
 
                     <v-card>
                       <v-card-title>
-                        <span class="headline">Reassign Selected Avatar(s)</span>
+                        <span class="headline"
+                          >Reassign Selected Avatar(s)</span
+                        >
                       </v-card-title>
                       <v-card-text>
                         <v-container>
@@ -113,8 +136,18 @@
                       </v-card-text>
                       <v-card-actions>
                         <v-spacer></v-spacer>
-                        <v-btn color="blue darken-1" text @click="reassignDialog = false">Close</v-btn>
-                        <v-btn color="blue darken-1" text @click="reassignAvatar">Reassign</v-btn>
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          @click="reassignDialog = false"
+                          >Close</v-btn
+                        >
+                        <v-btn
+                          color="blue darken-1"
+                          text
+                          @click="reassignAvatar"
+                          >Reassign</v-btn
+                        >
                       </v-card-actions>
                     </v-card>
                   </v-dialog>
@@ -167,13 +200,16 @@
                       md="4"
                       lg="3"
                     >
-                      <v-item v-slot:default="{active,toggle}">
+                      <v-item v-slot:default="{ active, toggle }">
                         <v-card
-                          :color="active?'secondary':''"
+                          :color="active ? 'secondary' : ''"
                           class="ma-4"
                           align="center"
+                          :disabled="isAssigning"
                           @click.stop="reassign(toggle)"
-                          v-if="item.assigned === 1 && Object.keys(item).length > 6"
+                          v-if="
+                            item.assigned === 1 && Object.keys(item).length > 6
+                          "
                         >
                           <v-responsive class="pt-4">
                             <v-avatar size="100" class="grey lighten-2">
@@ -182,21 +218,30 @@
                           </v-responsive>
 
                           <v-card-subtitle>
-                            <div class="grey--text">@{{item.username}}</div>
-                            <div class="grey--text text--darken-4">{{item.bio}}</div>
+                            <div class="grey--text">@{{ item.username }}</div>
+                            <div class="grey--text text--darken-4">
+                              {{ item.bio }}
+                            </div>
                           </v-card-subtitle>
                           <v-card-text>
                             <div class="grey--text text--darken-4">
-                              {{item.following}}
-                              <span class="grey--text text-caption">following</span>
-                              {{item.followers}}
-                              <span
-                                class="grey--text text-caption"
-                              >followers</span>
+                              {{ item.following }}
+                              <span class="grey--text text-caption"
+                                >following</span
+                              >
+                              {{ item.followers }}
+                              <span class="grey--text text-caption"
+                                >followers</span
+                              >
                             </div>
                             <div>
-                              <v-chip class="ma-2" color="indigo" text-color="white">
-                                <v-icon left>mdi-account-multiple-check</v-icon>assigned
+                              <v-chip
+                                class="ma-2"
+                                color="indigo"
+                                text-color="white"
+                              >
+                                <v-icon left>mdi-account-multiple-check</v-icon
+                                >assigned
                               </v-chip>
                             </div>
                           </v-card-text>
@@ -206,26 +251,35 @@
                             <v-row class="ma-3 text-sm grey--text">
                               <div>
                                 <v-icon small left>mdi-twitter</v-icon>
-                                <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                                <span class="grey--text text--darken-4">{{
+                                  item.tweets
+                                }}</span>
+                                tweets
                               </div>
 
                               <v-spacer></v-spacer>
                               <div class="text-subtitle-1">
-                                <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
-                                <span class="grey--text text--darken-4">Joined</span>
-                                {{item.joinDate | formatDate}}
+                                <v-icon small left color="secondary"
+                                  >mdi-calendar-month-outline</v-icon
+                                >
+                                <span class="grey--text text--darken-4"
+                                  >Joined</span
+                                >
+                                {{ item.joinDate | formatDate }}
                               </div>
                             </v-row>
                           </v-card-actions>
                         </v-card>
 
                         <v-card
-                          :color="active?'secondary':''"
+                          :color="active ? 'secondary' : ''"
                           class="ma-4"
                           align="center"
                           :disabled="reassigning"
                           @click.stop="assign(toggle)"
-                          v-else-if="item.assigned === 0 && Object.keys(item).length > 6"
+                          v-else-if="
+                            item.assigned === 0 && Object.keys(item).length > 6
+                          "
                         >
                           <v-responsive class="pt-4">
                             <v-avatar size="100" class="grey lighten-2">
@@ -234,22 +288,27 @@
                           </v-responsive>
 
                           <v-card-subtitle>
-                            <div class="grey--text">@{{item.username}}</div>
-                            <div class="grey--text text--darken-4">{{item.bio}}</div>
+                            <div class="grey--text">@{{ item.username }}</div>
+                            <div class="grey--text text--darken-4">
+                              {{ item.bio }}
+                            </div>
                           </v-card-subtitle>
                           <v-card-text>
                             <div class="grey--text text--darken-4">
-                              {{item.following}}
-                              <span class="grey--text text-caption">following</span>
-                              {{item.followers}}
-                              <span
-                                class="grey--text text-caption"
-                              >followers</span>
+                              {{ item.following }}
+                              <span class="grey--text text-caption"
+                                >following</span
+                              >
+                              {{ item.followers }}
+                              <span class="grey--text text-caption"
+                                >followers</span
+                              >
                             </div>
 
                             <div>
                               <v-chip class="ma-2" text-color="grey">
-                                <v-icon left>mdi-account-multiple-remove</v-icon>unasssigned
+                                <v-icon left>mdi-account-multiple-remove</v-icon
+                                >unasssigned
                               </v-chip>
                             </div>
                           </v-card-text>
@@ -259,21 +318,28 @@
                             <v-row class="ma-3 text-sm grey--text">
                               <div>
                                 <v-icon small left>mdi-twitter</v-icon>
-                                <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                                <span class="grey--text text--darken-4">{{
+                                  item.tweets
+                                }}</span>
+                                tweets
                               </div>
 
                               <v-spacer></v-spacer>
                               <div class="text-subtitle-1">
-                                <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
-                                <span class="grey--text text--darken-4">Joined</span>
-                                {{item.joinDate | formatDate}}
+                                <v-icon small left color="secondary"
+                                  >mdi-calendar-month-outline</v-icon
+                                >
+                                <span class="grey--text text--darken-4"
+                                  >Joined</span
+                                >
+                                {{ item.joinDate | formatDate }}
                               </div>
                             </v-row>
                           </v-card-actions>
                         </v-card>
 
                         <v-card
-                          :color="active?'secondary':''"
+                          :color="active ? 'secondary' : ''"
                           :disabled="reassigning"
                           class="ma-4"
                           align="center"
@@ -286,17 +352,21 @@
                           </v-responsive>
 
                           <v-card-subtitle>
-                            <div class="grey--text">@{{item.username}}</div>
-                            <div class="grey--text text--darken-4">{{item.bio}}</div>
+                            <div class="grey--text">@{{ item.username }}</div>
+                            <div class="grey--text text--darken-4">
+                              {{ item.bio }}
+                            </div>
                           </v-card-subtitle>
                           <v-card-text>
                             <div class="grey--text text--darken-4">
-                              {{item.following}}
-                              <span class="grey--text text-caption">following</span>
-                              {{item.followers}}
-                              <span
-                                class="grey--text text-caption"
-                              >followers</span>
+                              {{ item.following }}
+                              <span class="grey--text text-caption"
+                                >following</span
+                              >
+                              {{ item.followers }}
+                              <span class="grey--text text-caption"
+                                >followers</span
+                              >
                             </div>
 
                             <div>
@@ -311,14 +381,21 @@
                             <v-row class="ma-3 text-sm grey--text">
                               <div>
                                 <v-icon small left>mdi-twitter</v-icon>
-                                <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                                <span class="grey--text text--darken-4">{{
+                                  item.tweets
+                                }}</span>
+                                tweets
                               </div>
 
                               <v-spacer></v-spacer>
                               <div class="text-subtitle-1">
-                                <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
-                                <span class="grey--text text--darken-4">Joined</span>
-                                {{item.joinDate | formatDate}}
+                                <v-icon small left color="secondary"
+                                  >mdi-calendar-month-outline</v-icon
+                                >
+                                <span class="grey--text text--darken-4"
+                                  >Joined</span
+                                >
+                                {{ item.joinDate | formatDate }}
                               </div>
                             </v-row>
                           </v-card-actions>
@@ -335,7 +412,14 @@
                 <span class="grey--text">Items per page</span>
                 <v-menu offset-y>
                   <template v-slot:activator="{ on, attrs }">
-                    <v-btn dark text color="primary" class="ml-2" v-bind="attrs" v-on="on">
+                    <v-btn
+                      dark
+                      text
+                      color="primary"
+                      class="ml-2"
+                      v-bind="attrs"
+                      v-on="on"
+                    >
                       {{ avatarsPerPage }}
                       <v-icon>mdi-chevron-down</v-icon>
                     </v-btn>
@@ -353,11 +437,25 @@
 
                 <v-spacer></v-spacer>
 
-                <span class="mr-4 grey--text">Page {{ page }} of {{ numberOfPages }}</span>
-                <v-btn fab dark color="blue darken-3" class="mr-1" @click="formerPage">
+                <span class="mr-4 grey--text"
+                  >Page {{ page }} of {{ numberOfPages }}</span
+                >
+                <v-btn
+                  fab
+                  dark
+                  color="blue darken-3"
+                  class="mr-1"
+                  @click="formerPage"
+                >
                   <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
-                <v-btn fab dark color="blue darken-3" class="ml-1" @click="nextPage">
+                <v-btn
+                  fab
+                  dark
+                  color="blue darken-3"
+                  class="ml-1"
+                  @click="nextPage"
+                >
                   <v-icon>mdi-chevron-right</v-icon>
                 </v-btn>
               </v-row>
@@ -389,6 +487,7 @@ export default {
       assigneeID: [],
       reassignee: "",
       reassigneeID: [],
+      isAssigning: false,
       reassigning: false,
     };
   },
@@ -397,7 +496,7 @@ export default {
     this.$store.dispatch("people/getPeople", { token: this.token });
   },
   computed: {
-    ...mapGetters("avatars", ["avatars", "fetching"]),
+    ...mapGetters("avatars", ["avatars", "fetching", "assigning"]),
     ...mapGetters("people", ["team"]),
 
     token() {
@@ -448,6 +547,7 @@ export default {
     },
     assign(e) {
       e(this);
+      this.isAssigning = !this.isAssigning;
     },
     reassign(e) {
       e(this);
