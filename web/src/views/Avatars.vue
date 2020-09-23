@@ -74,6 +74,51 @@
                     </v-card>
                   </v-dialog>
 
+                  <v-dialog
+                    v-model="reassignDialog"
+                    persistent
+                    v-if="showReassign"
+                    max-width="600px"
+                  >
+                    <template v-slot:activator="{ on, attrs }">
+                      <v-btn
+                        class="ma-2"
+                        small
+                        color="success"
+                        v-on="on"
+                        v-bind="attrs"
+                        slot="activator"
+                      >
+                        <v-icon small left>mdi-account-multiple-plus</v-icon>Reassign
+                      </v-btn>
+                    </template>
+
+                    <v-card>
+                      <v-card-title>
+                        <span class="headline">Reassign Selected Avatar(s)</span>
+                      </v-card-title>
+                      <v-card-text>
+                        <v-container>
+                          <v-row>
+                            <v-col cols="12">
+                              <v-autocomplete
+                                :items="members"
+                                v-model="reassignee"
+                                label="Member to reassign"
+                              ></v-autocomplete>
+                            </v-col>
+                          </v-row>
+                        </v-container>
+                        <small>*indicates required field</small>
+                      </v-card-text>
+                      <v-card-actions>
+                        <v-spacer></v-spacer>
+                        <v-btn color="blue darken-1" text @click="reassignDialog = false">Close</v-btn>
+                        <v-btn color="blue darken-1" text @click="reassignAvatar">Reassign</v-btn>
+                      </v-card-actions>
+                    </v-card>
+                  </v-dialog>
+
                   <v-tooltip top>
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn
@@ -127,6 +172,7 @@
                           :color="active?'secondary':''"
                           class="ma-4"
                           align="center"
+                          @click.stop="reassign(toggle)"
                           v-if="item.assigned === 1 && Object.keys(item).length > 6"
                         >
                           <v-responsive class="pt-4">
@@ -177,6 +223,7 @@
                           :color="active?'secondary':''"
                           class="ma-4"
                           align="center"
+                          :disabled="reassigning"
                           @click.stop="assign(toggle)"
                           v-else-if="item.assigned === 0 && Object.keys(item).length > 6"
                         >
@@ -225,7 +272,13 @@
                           </v-card-actions>
                         </v-card>
 
-                        <v-card :color="active?'secondary':''" class="ma-4" align="center" v-else>
+                        <v-card
+                          :color="active?'secondary':''"
+                          :disabled="reassigning"
+                          class="ma-4"
+                          align="center"
+                          v-else
+                        >
                           <v-responsive class="pt-4">
                             <v-avatar size="100" class="grey lighten-2">
                               <img :src="item.profileImageURL" />
@@ -331,8 +384,12 @@ export default {
       selected: [],
       selectedAvatarsIDs: [],
       assignDialog: false,
+      reassignDialog: false,
       assignee: "",
       assigneeID: [],
+      reassignee: "",
+      reassigneeID: [],
+      reassigning: false,
     };
   },
   mounted() {
@@ -351,7 +408,10 @@ export default {
       return Math.ceil(this.avatars.length / this.avatarsPerPage);
     },
     showAssign() {
-      return this.selected.length > 0;
+      return this.selected.length > 0 && !this.reassigning;
+    },
+    showReassign() {
+      return this.selected.length > 0 && this.reassigning;
     },
     members() {
       const names = [];
@@ -389,6 +449,10 @@ export default {
     assign(e) {
       e(this);
     },
+    reassign(e) {
+      e(this);
+      this.reassigning = !this.reassigning;
+    },
     assignAvatar() {
       this.team.forEach((member) => {
         let name = member.firstname + " " + member.lastname;
@@ -396,13 +460,6 @@ export default {
           this.assigneeID = member.id;
         }
       });
-      // /**eslint-disable */
-      // console.log(
-      //   "ASSIGNED USER",
-      //   this.assignee,
-      //   this.assigneeID,
-      //   this.selectedAvatarsIDs
-      // );
       this.assignDialog = false;
       let payload = {
         userID: this.assigneeID,
@@ -416,15 +473,37 @@ export default {
       /**eslint-disable */
       console.log(payload);
     },
+    reassignAvatar() {
+      this.team.forEach((member) => {
+        let name = member.firstname + " " + member.lastname;
+        if (name === this.reassignee) {
+          this.reassigneeID = member.id;
+        }
+      });
+      this.reassignDialog = false;
+      let payload = {
+        userID: this.reassigneeID,
+        avatars: this.selectedAvatarsIDs,
+      };
+      this.$store.dispatch("avatars/assignAvatars", {
+        token: this.token,
+        assign: payload,
+        router: this.$router,
+      });
+      /**eslint-disable */
+      console.log(payload);
+    },
     clicked(v) {
       /**eslint-disable */
       // this.selected.forEach((idx) => {
-      if (Object.keys(this.avatars[v[this.count]]).length > 6) {
-        this.selectedAvatarsIDs.push(this.avatars[v[this.count]].id);
+      if (this.avatars[v[this.count]]) {
+        if (Object.keys(this.avatars[v[this.count]]).length > 6) {
+          this.selectedAvatarsIDs.push(this.avatars[v[this.count]].id);
+        }
+        // });
+        console.log("CLICKED", this.avatars, this.selectedAvatarsIDs, v);
+        this.count++;
       }
-      // });
-      console.log("CLICKED", this.selectedAvatarsIDs);
-      this.count++;
     },
   },
 };
