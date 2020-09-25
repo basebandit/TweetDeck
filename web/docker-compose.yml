@@ -1,0 +1,18 @@
+version: "3.7"
+services:
+  avatarlysis:
+    build:
+      context: .
+    container_name: avatarlysis-web
+    command: ["nginx", "-g", "daemon off;"]
+    ports:
+      - 80:80
+    # volumes:
+    #   - ./avatarlysis:/avatarlysis
+    tty: true
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: "bridge"
