@@ -13,14 +13,14 @@
           <v-card align="center">
             <v-responsive class="pt-4">
               <v-avatar color="grey lighten-2" size="100">
-                <span class="white--text headline">{{getInitials()}}</span>
+                <span class="white--text headline">{{ getInitials() }}</span>
               </v-avatar>
             </v-responsive>
-            <v-card-title class="justify-center">{{name}}</v-card-title>
+            <v-card-title class="justify-center">{{ name }}</v-card-title>
             <v-card-subtitle>
-              <div>Avatars {{member.avatars}}</div>
+              <div>Avatars {{ member.avatars }}</div>
               <v-card-text>
-                <div>Created at {{member.createdAt | formatDate}}</div>
+                <div>Created at {{ member.createdAt | formatDate }}</div>
               </v-card-text>
             </v-card-subtitle>
             <v-divider class="mx-4"></v-divider>
@@ -30,32 +30,50 @@
                   <div class="h6 text--primary">
                     <v-tooltip top>
                       <template v-slot:activator="{ on, attrs }">
-                        <v-btn text class="ma-2" v-bind="attrs" v-on="on" color="primary">
-                          {{member.followers}}
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="primary"
+                        >
+                          {{ member.followers }}
                           <v-icon dark right>mdi-account-arrow-left</v-icon>
                         </v-btn>
                       </template>
-                      <span>{{member.followers}} Followers</span>
+                      <span>{{ member.followers }} Followers</span>
                     </v-tooltip>
                     <span class="mx-1">|</span>
                     <v-tooltip top>
                       <template v-slot:activator="{ on, attrs }">
-                        <v-btn text class="ma-2" v-bind="attrs" v-on="on" color="primary">
-                          {{member.following}}
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="primary"
+                        >
+                          {{ member.following }}
                           <v-icon dark right>mdi-account-arrow-right</v-icon>
                         </v-btn>
                       </template>
-                      <span>{{member.following}} Following</span>
+                      <span>{{ member.following }} Following</span>
                     </v-tooltip>
                     <span class="mx-1">|</span>
                     <v-tooltip top>
                       <template v-slot:activator="{ on, attrs }">
-                        <v-btn text class="ma-2" v-bind="attrs" v-on="on" color="primary">
-                          {{member.tweets}}
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="primary"
+                        >
+                          {{ member.tweets }}
                           <v-icon dark right>mdi-twitter</v-icon>
                         </v-btn>
                       </template>
-                      <span>{{member.tweets}} Tweets</span>
+                      <span>{{ member.tweets }} Tweets</span>
                     </v-tooltip>
                   </div>
                 </v-col>
@@ -79,10 +97,12 @@
                 class="pa-5"
                 extended
                 flat
-                style="position: -webkit-sticky;
-            position: sticky;
-            top: 4rem;
-            z-index:1;"
+                style="
+                  position: -webkit-sticky;
+                  position: sticky;
+                  top: 4rem;
+                  z-index: 1;
+                "
               >
                 <v-text-field
                   v-model="search"
@@ -133,7 +153,13 @@
 
             <template v-slot:default="props">
               <v-row>
-                <v-col v-for="item in props.items" :key="item.username" cols="12" md="3" sm="8">
+                <v-col
+                  v-for="item in props.items"
+                  :key="item.username"
+                  cols="12"
+                  md="3"
+                  sm="8"
+                >
                   <v-card class="ma-4" align="center">
                     <v-responsive class="pt-4">
                       <v-avatar size="100" class="grey lighten-2">
@@ -142,17 +168,17 @@
                     </v-responsive>
 
                     <v-card-subtitle>
-                      <div class="grey--text">@{{item.username}}</div>
-                      <div class="grey--text text--darken-4">{{item.bio}}</div>
+                      <div class="grey--text">@{{ item.username }}</div>
+                      <div class="grey--text text--darken-4">
+                        {{ item.bio }}
+                      </div>
                     </v-card-subtitle>
                     <v-card-text>
                       <div class="grey--text text--darken-4">
-                        {{item.following}}
+                        {{ item.following }}
                         <span class="grey--text text-caption">following</span>
-                        {{item.followers}}
-                        <span
-                          class="grey--text text-caption"
-                        >followers</span>
+                        {{ item.followers }}
+                        <span class="grey--text text-caption">followers</span>
                       </div>
                     </v-card-text>
                     <!-- <v-divider></v-divider> -->
@@ -161,14 +187,19 @@
                       <v-row class="ma-3 text-sm grey--text">
                         <div>
                           <v-icon small left>mdi-twitter</v-icon>
-                          <span class="grey--text text--darken-4">{{item.tweets}}</span> tweets
+                          <span class="grey--text text--darken-4">{{
+                            item.tweets
+                          }}</span>
+                          tweets
                         </div>
 
                         <v-spacer></v-spacer>
                         <div class="text-subtitle-1">
-                          <v-icon small left color="secondary">mdi-calendar-month-outline</v-icon>
+                          <v-icon small left color="secondary"
+                            >mdi-calendar-month-outline</v-icon
+                          >
                           <span class="grey--text text--darken-4">Joined</span>
-                          {{item.joinDate | formatDate}}
+                          {{ item.joinDate | formatDate }}
                         </div>
                       </v-row>
                     </v-card-actions>
@@ -182,7 +213,14 @@
                 <span class="grey--text">Items per page</span>
                 <v-menu offset-y>
                   <template v-slot:activator="{ on, attrs }">
-                    <v-btn dark text color="primary" class="ml-2" v-bind="attrs" v-on="on">
+                    <v-btn
+                      dark
+                      text
+                      color="primary"
+                      class="ml-2"
+                      v-bind="attrs"
+                      v-on="on"
+                    >
                       {{ avatarsPerPage }}
                       <v-icon>mdi-chevron-down</v-icon>
                     </v-btn>
@@ -191,7 +229,7 @@
                     <v-list-item
                       v-for="(number, index) in avatarsPerPageArray"
                       :key="index"
-                      @click="updateItemsPerPage(number)"
+                      @click="updateAvatarsPerPage(number)"
                     >
                       <v-list-item-title>{{ number }}</v-list-item-title>
                     </v-list-item>
@@ -200,11 +238,25 @@
 
                 <v-spacer></v-spacer>
 
-                <span class="mr-4 grey--text">Page {{ page }} of {{ numberOfPages }}</span>
-                <v-btn fab dark color="blue darken-3" class="mr-1" @click="formerPage">
+                <span class="mr-4 grey--text"
+                  >Page {{ page }} of {{ numberOfPages }}</span
+                >
+                <v-btn
+                  fab
+                  dark
+                  color="blue darken-3"
+                  class="mr-1"
+                  @click="formerPage"
+                >
                   <v-icon>mdi-chevron-left</v-icon>
                 </v-btn>
-                <v-btn fab dark color="blue darken-3" class="ml-1" @click="nextPage">
+                <v-btn
+                  fab
+                  dark
+                  color="blue darken-3"
+                  class="ml-1"
+                  @click="nextPage"
+                >
                   <v-icon>mdi-chevron-right</v-icon>
                 </v-btn>
               </v-row>
