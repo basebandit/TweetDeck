@@ -547,11 +547,27 @@ export default {
     },
     assign(e) {
       e(this);
-      this.isAssigning = !this.isAssigning;
+      this.isAssigning = true;
+      /**eslint-disable */
+      console.log("ASSIGN_", this.selected);
+      if (this.selected.length < 1) this.isAssigning = false;
     },
     reassign(e) {
       e(this);
-      this.reassigning = !this.reassigning;
+      this.reassigning = true;
+      if (this.selected.length < 1) this.reassigning = false;
+    },
+    once(fn, context) {
+      let result;
+
+      return function () {
+        if (fn) {
+          result = fn.apply(context || this, arguments);
+          fn = null;
+        }
+
+        return result;
+      };
     },
     assignAvatar() {
       this.team.forEach((member) => {
@@ -561,17 +577,18 @@ export default {
         }
       });
       this.assignDialog = false;
+      this.isAssigning = false;
       let payload = {
         userID: this.assigneeID,
         avatars: this.selectedAvatarsIDs,
       };
+      /**eslint-disable */
+      console.log("PAYLOAD", payload);
       this.$store.dispatch("avatars/assignAvatars", {
         token: this.token,
         assign: payload,
         router: this.$router,
       });
-      /**eslint-disable */
-      console.log(payload);
     },
     reassignAvatar() {
       this.team.forEach((member) => {
@@ -581,6 +598,7 @@ export default {
         }
       });
       this.reassignDialog = false;
+      this.reassigning = false;
       let payload = {
         userID: this.reassigneeID,
         avatars: this.selectedAvatarsIDs,
