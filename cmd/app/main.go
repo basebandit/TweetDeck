@@ -103,16 +103,9 @@ func main() {
 		Handler: api,
 	}
 
-	// s1 := gocron.NewScheduler(time.UTC)
-
-	// if _, err := s1.Every(0).Day().At("10:14").Do(twitterLookup, ctx, db, cfg, logger); err != nil {
-	// 	logger.Println(err)
-	// }
-	// s1.StartAsync()
-
 	// pass in your specific zone name, using Kenya/Nairobi as example
 	c := cron.New()
-	c.AddFunc("CRON_TZ=Africa/Nairobi 35 10 * * *", func() {
+	c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
 		if err := twitterLookup(ctx, db, cfg, logger); err != nil {
 			logger.Println(err)
 		}
