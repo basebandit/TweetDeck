@@ -7,7 +7,8 @@ import (
 //Avatar is a twitter account.
 type Avatar struct {
 	ID              string    `db:"id" json:"id"`                                       //Unique Identifier.
-	UserID          *string   `db:"user_id" json:"user_id,omitempty"`                   //The user who manages/runs this twitter account.
+	UserID          *string   `db:"user_id" json:"user_id,omitempty"`                   //The id of the user who manages/runs this twitter account.
+	Person          *string   `db:"person" json:"person,omitempty"`                     //The name of the user who manages/runs this twitter account. (assigned)
 	Username        string    `db:"username" json:"username"`                           //The twitter handle.
 	Active          bool      `db:"active" json:"active"`                               //Use this flag to perform soft deletes.
 	Assigned        *int      `json:"assigned,omitempty"`                               //Shows whether this avatar profile is already assigned to an existing user or not. 0=not assigned 1= assigned
@@ -36,3 +37,5 @@ type UpdateAvatar struct {
 	Username *string `json:"username"`
 	UserID   *string `json:"userID"`
 }
+
+//implements the Sort interface,
