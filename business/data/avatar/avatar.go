@@ -226,6 +226,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 		allp.id,
 		allp.username,
 		allp.user_id,
+		(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,
 		allp.followers,
 		allp.following,
 		allp.tweets,
