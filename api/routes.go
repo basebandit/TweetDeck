@@ -12,6 +12,8 @@ const (
 	personUpdate = "/api/people/{id}/edit"
 	new          = "/api/people/new"
 
+	totals = "/api/totals"
+
 	signup = "/api/signup"
 	login  = "/api/token"
 	ping   = "/api/ping"
@@ -37,6 +39,9 @@ func (s *Server) routes() {
 		r.Get(people, s.handlePeople)
 		r.Post(new, s.handleAddMember)
 		r.Put(personUpdate, s.handleUpdateMember)
+
+		//Totals
+		r.Get(totals, s.handleTotals)
 	})
 
 	//==============Unauthenticated Routes===============
