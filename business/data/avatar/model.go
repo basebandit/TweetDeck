@@ -59,7 +59,7 @@ func (a ByFollowers) Len() int      { return len(a) }
 func (a ByFollowers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ByFollowers) Less(i, j int) bool {
 	if a[i].Followers != nil && a[j].Followers != nil {
-		return *(a[i].Followers) < *(a[j].Followers)
+		return *(a[i].Followers) > *(a[j].Followers)
 	}
 	return false
 }
