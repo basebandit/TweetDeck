@@ -4,16 +4,16 @@
 
     <v-container class="my-5">
       <v-row class="mb-3">
-        <v-col v-for="(stat,index) in stats" :key="index">
+        <v-col v-for="(stat, index) in stats" :key="index">
           <v-card :class="`stat ${stat.name}`">
             <v-card-title class="headline">
-              <span>{{stat.total}}</span>
+              <span>{{ stat.total }}</span>
               <v-spacer></v-spacer>
               <span>
-                <v-icon right color="primary">{{stat.icon}}</v-icon>
+                <v-icon right color="primary">{{ stat.icon }}</v-icon>
               </span>
             </v-card-title>
-            <v-card-subtitle>{{stat.name}}</v-card-subtitle>
+            <v-card-subtitle>{{ stat.name }}</v-card-subtitle>
           </v-card>
         </v-col>
       </v-row>
@@ -38,24 +38,26 @@
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
           <v-card flat class="mx-auto">
-            <v-card-title class="align-start">Top 5 Weekly Avatars By Tweets</v-card-title>
+            <v-card-title class="align-start"
+              >Top 5 Weekly Avatars By Tweets</v-card-title
+            >
             <div
-              v-for="(avatar,index) in topWeeklyAvatarTweets"
+              v-for="(avatar, index) in topWeeklyAvatarTweets"
               :key="avatar.handle"
-              :class="`avatar-${index+1}`"
+              :class="`avatar-${index + 1}`"
             >
               <v-row class="px-3">
                 <v-col>
                   <div class="caption grey--text">Real Name</div>
-                  <div>{{avatar.person}}</div>
+                  <div>{{ avatar.person }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>{{avatar.handle}}</div>
+                  <div>{{ avatar.handle }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of tweets</div>
-                  <div>{{avatar.tweets}}</div>
+                  <div>{{ avatar.tweets }}</div>
                 </v-col>
               </v-row>
               <v-divider></v-divider>
@@ -64,9 +66,15 @@
         </v-col>
         <v-col cols="12" md="4" lg="4">
           <v-card class="mx-auto pa-3">
-            <v-card-title class="headline">Top 5 Weekly Avatars By Tweets</v-card-title>
+            <v-card-title class="headline"
+              >Top 5 Weekly Avatars By Tweets</v-card-title
+            >
             <v-card-text>
-              <pie-chart :round="2" suffix="%" :data="topWeeklyAvatarsByTweets" />
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topWeeklyAvatarsByTweets"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -91,24 +99,26 @@
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
           <v-card flat class="mx-auto">
-            <v-card-title class="align-start">Top 5 Weekly Avatars By Followers</v-card-title>
+            <v-card-title class="align-start"
+              >Top 5 Weekly Avatars By Followers</v-card-title
+            >
             <div
-              v-for="(avatar,index) in topWeeklyAvatarFollowers"
+              v-for="(avatar, index) in topWeeklyAvatarFollowers"
               :key="avatar.handle"
-              :class="`avatar-${index+1}`"
+              :class="`avatar-${index + 1}`"
             >
               <v-row class="px-3">
                 <v-col>
                   <div class="caption grey--text">Real Name</div>
-                  <div>{{avatar.person}}</div>
+                  <div>{{ avatar.person }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>{{avatar.handle}}</div>
+                  <div>{{ avatar.handle }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of followers</div>
-                  <div>{{avatar.followers}}</div>
+                  <div>{{ avatar.followers }}</div>
                 </v-col>
               </v-row>
               <v-divider></v-divider>
@@ -117,9 +127,15 @@
         </v-col>
         <v-col cols="12" md="4" lg="4">
           <v-card class="pa-3">
-            <v-card-title class="headline">Top 5 Weekly Avatars By Followers</v-card-title>
+            <v-card-title class="headline"
+              >Top 5 Weekly Avatars By Followers</v-card-title
+            >
             <v-card-text>
-              <pie-chart :round="2" suffix="%" :data="topWeeklyAvatarsByFollowers" />
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topWeeklyAvatarsByFollowers"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -135,13 +151,6 @@ export default {
   name: "Home",
   data() {
     return {
-      stats: [
-        { total: 560, icon: "mdi-account-supervisor", name: "avatars" },
-        { total: 789, icon: "mdi-twitter", name: "tweets" },
-        { total: 389, icon: "mdi-account-arrow-left", name: "followers" },
-        { total: 459, icon: "mdi-account-arrow-right", name: "following" },
-        { total: 897, icon: "mdi-thumb-up", name: "likes" },
-      ],
       totalDailyTweets: {
         Mon: 789,
         Tue: 876,
@@ -201,15 +210,35 @@ export default {
     };
   },
   mounted() {
-    this.$store.dispatch("people/getAssignedPeople", { token: this.token });
+    this.$store.dispatch("people/getPeople", { token: this.token });
+    this.$store.dispatch("stats/getTotals", { token: this.token });
   },
   computed: {
-    ...mapGetters("people", { team: "assignedTeam" }),
+    ...mapGetters("people", ["team"]),
+    ...mapGetters("stats", ["totals"]),
     token() {
       return window.localStorage.getItem("user");
     },
-    totals() {
-      return this.sum(this.team, "tweets");
+    stats() {
+      return [
+        {
+          total: this.totals.avatars,
+          icon: "mdi-account-supervisor",
+          name: "avatars",
+        },
+        { total: this.totals.tweets, icon: "mdi-twitter", name: "tweets" },
+        {
+          total: this.totals.followers,
+          icon: "mdi-account-arrow-left",
+          name: "followers",
+        },
+        {
+          total: this.totals.following,
+          icon: "mdi-account-arrow-right",
+          name: "following",
+        },
+        { total: this.totals.followers, icon: "mdi-thumb-up", name: "likes" },
+      ];
     },
     topWeeklyAvatarsByTweets() {
       let total = 0;
