@@ -27,13 +27,12 @@ export default {
       const { token } = payload
       commit("peopleFetchStatus")
       PeopleService.getPeople(token).then(response => {
-        setTimeout(() => {
+        
           if (response.status === 200) {
             commit("peopleFetchSuccess", {
               people: response.data,
             })
           }
-        }, 500)
       }).catch(err => {
         commit("peopleFetchFailure", {
           message: err.response.data.error
