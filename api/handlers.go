@@ -381,6 +381,69 @@ func (s *Server) handlePeople(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, usr)
 }
 
+func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	avs, err := avatar.Get(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	var (
+		tweets    int
+		following int
+		followers int
+		avatars   int
+		likes     int
+	)
+
+	for _, av := range avs {
+		if av.Tweets != nil {
+			tweets += *av.Tweets //total tweets
+		}
+
+		if av.Following != nil {
+			following += *av.Following //total following
+		}
+
+		if av.Followers != nil {
+			followers += *av.Followers //total followers
+		}
+
+		if av.Likes != nil {
+			likes += *av.Likes //total likes
+		}
+
+		avatars++ //total avatars
+	}
+
+	totals := struct {
+		Avatars   int `json:"avatars"`
+		Tweets    int `json:"tweets"`
+		Likes     int `json:"likes"`
+		Followers int `json:"followers"`
+		Following int `json:"following"`
+	}{
+		avatars,
+		tweets,
+		likes,
+		followers,
+		following,
+	}
+
+	render.Respond(w, r, totals)
+}
+
 // func (s *Server) handleUnassignedPeople(w http.ResponseWriter, r *http.Request) {
 // 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
 // 	defer span.End()
