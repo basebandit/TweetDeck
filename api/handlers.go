@@ -468,6 +468,29 @@ func (s *Server) handleTopFiveAvatarsByTweets(w http.ResponseWriter, r *http.Req
 	render.Respond(w, r, avs[0:5])
 }
 
+func (s *Server) handleTopFiveByFollowers(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	avs, err := avatar.Get(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	sort.Sort(avatar.ByFollowers(avs))
+
+	render.Respond(w, r, avs[0:5])
+}
+
 // func (s *Server) handleUnassignedPeople(w http.ResponseWriter, r *http.Request) {
 // 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
 // 	defer span.End()
