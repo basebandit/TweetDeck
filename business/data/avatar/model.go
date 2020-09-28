@@ -38,4 +38,28 @@ type UpdateAvatar struct {
 	UserID   *string `json:"userID"`
 }
 
-//implements the Sort interface,
+// ByTweets implements sort.Interface for []Avatar based on
+// the tweets field.
+type ByTweets []*Avatar
+
+func (a ByTweets) Len() int      { return len(a) }
+func (a ByTweets) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByTweets) Less(i, j int) bool {
+	if a[i].Tweets != nil && a[j].Tweets != nil {
+		return *(a[i].Tweets) > *(a[j].Tweets)
+	}
+	return false
+}
+
+// ByFollowers implements sort.Interface for []Avatar based on
+// the followers field.
+type ByFollowers []*Avatar
+
+func (a ByFollowers) Len() int      { return len(a) }
+func (a ByFollowers) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByFollowers) Less(i, j int) bool {
+	if a[i].Followers != nil && a[j].Followers != nil {
+		return *(a[i].Followers) < *(a[j].Followers)
+	}
+	return false
+}
