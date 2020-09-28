@@ -152,6 +152,92 @@
                     </v-card>
                   </v-dialog>
 
+                  <div class="h6 text--primary">
+                    <v-tooltip top>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="primary"
+                        >
+                          {{ stats.avatars }}
+                          <v-icon dark right>mdi-account-multiple</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>{{ stats.avatars }} Total Accounts</span>
+                    </v-tooltip>
+                    <span class="mx-1">|</span>
+                    <v-tooltip top>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="indigo"
+                        >
+                          {{ stats.assigned }}
+                          <v-icon dark right>mdi-account-multiple-check</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>{{ stats.assigned }} Assigned Active Accounts</span>
+                    </v-tooltip>
+                    <span class="mx-1">|</span>
+                    <v-tooltip top>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="grey"
+                        >
+                          {{ stats.unassigned }}
+                          <v-icon dark right
+                            >mdi-account-multiple-remove</v-icon
+                          >
+                        </v-btn>
+                      </template>
+                      <span
+                        >{{ stats.unassigned }} Unassigned Active Accounts</span
+                      >
+                    </v-tooltip>
+                    <span class="mx-1">|</span>
+                    <v-tooltip top>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="success"
+                        >
+                          {{ stats.active }}
+                          <v-icon dark right>mdi-account-check</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>{{ stats.active }} Active Accounts</span>
+                    </v-tooltip>
+                    <span class="mx-1">|</span>
+                    <v-tooltip top>
+                      <template v-slot:activator="{ on, attrs }">
+                        <v-btn
+                          text
+                          class="ma-2"
+                          v-bind="attrs"
+                          v-on="on"
+                          color="error"
+                        >
+                          {{ stats.suspended }}
+                          <v-icon dark right>mdi-account-alert</v-icon>
+                        </v-btn>
+                      </template>
+                      <span>{{ stats.suspended }} Suspended Accounts</span>
+                    </v-tooltip>
+                  </div>
+
                   <v-tooltip top>
                     <template v-slot:activator="{ on, attrs }">
                       <v-btn
@@ -409,7 +495,7 @@
 
             <template v-slot:footer>
               <v-row class="mt-2" align="center" justify="center">
-                <span class="grey--text">Items per page</span>
+                <span class="grey--text">Avatars per page</span>
                 <v-menu offset-y>
                   <template v-slot:activator="{ on, attrs }">
                     <v-btn
@@ -519,6 +605,35 @@ export default {
       });
 
       return names;
+    },
+    stats() {
+      let suspended = 0;
+      let active = 0;
+      let assigned = 0;
+      let unassigned = 0;
+
+      this.avatars.forEach((avatar) => {
+        if (Object.keys(avatar).length <= 6) {
+          suspended++;
+        } else {
+          active++;
+          //we also calculate assigned ans unassigned here. Since you can only assign an account if
+          //it is not already suspended.
+          if (avatar.assigned === 1) {
+            assigned++;
+          } else if (avatar.assigned === 0) {
+            unassigned++;
+          }
+        }
+      });
+
+      return {
+        avatars: this.avatars.length,
+        suspended: suspended,
+        active: active,
+        assigned: assigned,
+        unassigned: unassigned,
+      };
     },
   },
   methods: {
