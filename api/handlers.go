@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"sort"
 	"time"
 
 	"github.com/go-chi/chi"
@@ -445,7 +444,7 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, totals)
 }
 
-func (s *Server) handleTopFiveAvatarsByTweets(w http.ResponseWriter, r *http.Request) {
+func (s *Server) handleTopFives(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
 	defer span.End()
 
@@ -456,94 +455,39 @@ func (s *Server) handleTopFiveAvatarsByTweets(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	avs, err := avatar.Get(ctx, s.db)
+	following, err := avatar.GetTopFiveByFollowing(s.ctx, s.db)
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
 
-	sort.Sort(avatar.ByTweets(avs))
-
-	render.Respond(w, r, avs[0:5])
-}
-
-func (s *Server) handleTopFiveByFollowers(w http.ResponseWriter, r *http.Request) {
-	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
-	defer span.End()
-
-	_, ok := ctx.Value(KeyValues).(*Values)
-	if !ok {
-		s.log.Println("web value missing from context")
-		render.Render(w, r, ErrInternalServerError)
-		return
-	}
-
-	avs, err := avatar.Get(ctx, s.db)
+	followers, err := avatar.GetTopFiveByFollowers(s.ctx, s.db)
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
 
-	sort.Sort(avatar.ByFollowers(avs))
+	tweets, err := avatar.GetTopFiveByTweets(s.ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 
-	render.Respond(w, r, avs[0:5])
+	topFives := struct {
+		Following []*avatar.Avatar `json:"following"`
+		Followers []*avatar.Avatar `json:"followers"`
+		Tweets    []*avatar.Avatar `json:"tweets"`
+	}{
+		Following: following,
+		Followers: followers,
+		Tweets:    tweets,
+	}
+
+	render.Respond(w, r, topFives)
 }
-
-// func (s *Server) handleUnassignedPeople(w http.ResponseWriter, r *http.Request) {
-// 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
-// 	defer span.End()
-
-// 	_, ok := ctx.Value(KeyValues).(*Values)
-// 	if !ok {
-// 		s.log.Println("web value missing from context")
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
-
-// 	us, err := user.Get(ctx, s.db)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
-
-// 	usr := []struct {
-// 		UserID    string    `json:"id"`
-// 		Firstname string    `json:"firstname"`
-// 		Lastname  string    `json:"lastname"`
-// 		Tweets    int       `json:"tweets"`
-// 		Followers int       `json:"followers"`
-// 		Likes     int       `json:"likes"`
-// 		Following int       `json:"following"`
-// 		CreatedAt time.Time `json:"createdAt"`
-// 	}{}
-// 	//Make the user IDS url friendly and short
-
-// 	for _, u := range us {
-// 		u.UID = user.Encode(u.ID)
-
-// 		usr = append(usr, struct {
-// 			UserID    string    `json:"id"`
-// 			Firstname string    `json:"firstname"`
-// 			Lastname  string    `json:"lastname"`
-// 			Tweets    int       `json:"tweets"`
-// 			Followers int       `json:"followers"`
-// 			Likes     int       `json:"likes"`
-// 			Following int       `json:"following"`
-// 			CreatedAt time.Time `json:"createdAt"`
-// 		}{
-// 			UserID:    u.UID,
-// 			Firstname: u.Firstname,
-// 			Lastname:  u.Lastname,
-// 			CreatedAt: u.CreatedAt,
-// 		})
-
-// 	}
-
-// 	render.Respond(w, r, usr)
-// }
 
 func (s *Server) handleAddMember(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
@@ -623,133 +567,201 @@ func (s *Server) handleUpdateMember(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, http.NoBody)
 }
 
-// func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
-// 	loginRequest := struct {
-// 		Email    string `json:"email"`
-// 		Password string `json:"password"`
-// 	}{}
+func (s *Server) handleDailyStats(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
 
-// 	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-// 		if len(loginRequest.Email) == 0 || len(loginRequest.Password) == 0 {
-// 			s.log.Printf("api: %v\n", errors.New("missing email of password field"))
-// 			render.Render(w, r, ErrInvalidRequest(errors.New("missing email of password field")))
-// 			return
-// 		}
-// 	}
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 
-// 	userService := user.NewService(r.Context(), s.db)
-// 	u, err := userService.GetByEmail(loginRequest.Email)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrUnauthorized(ErrInvalidEmailOrPassword))
-// 		return
-// 	}
+	var days int
 
-// 	if _, err := u.Compare(u.Password, loginRequest.Password); err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrUnauthorized(ErrInvalidEmailOrPassword))
-// 		return
-// 	}
+	day := time.Now().Weekday()
 
-// 	jwtService, err := jwt.NewService(hex.EncodeToString([]byte(secret)))
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
+	switch day {
+	case time.Monday:
+		days = 1
+	case time.Tuesday:
+		days = 2
+	case time.Wednesday:
+		days = 3
+	case time.Thursday:
+		days = 4
+	case time.Friday:
+		days = 5
+	case time.Saturday:
+		days = 6
+	case time.Sunday:
+		days = 7
+	}
 
-// 	token, err := jwtService.Create(u.ID)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
+	avs, err := avatar.GetThePastDays(s.ctx, s.db, days)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 
-// 	res := struct {
-// 		Email  string `json:"email"`
-// 		Name   string `json:"name"`
-// 		UserID string `json:"id"`
-// 		Token  string `json:"token"`
-// 	}{
-// 		Email:  u.Email,
-// 		Name:   u.Name,
-// 		UserID: u.ID.Hex(),
-// 		Token:  token,
-// 	}
+	// fmt.Printf("%+v\n", avs)
+	var (
+		tweets    int
+		likes     int
+		followers int
+		following int
+	)
+	result := make(map[string]map[string]int)
+	for _, av := range avs {
+		switch *av.Day {
+		case time.Wednesday.String():
+			tweets += *av.Tweets
+			following += *av.Following
+			followers += *av.Followers
+			likes += *av.Likes
 
-// 	render.Respond(w, r, &res)
-// }
+			if result[*av.Day] == nil {
+				result[*av.Day] = make(map[string]int)
+				result[*av.Day]["tweets"] = tweets
+				result[*av.Day]["following"] = following
+				result[*av.Day]["followers"] = followers
+				result[*av.Day]["likes"] = likes
+			}
 
-// func (s *Server) handleAvatarPing(w http.ResponseWriter, r *http.Request) {
-// 	fmt.Fprintf(w, "pong\n")
-// }
+		case time.Thursday.String():
+			tweets += *av.Tweets
+			following += *av.Following
+			followers += *av.Followers
+			likes += *av.Likes
+			if result[*av.Day] == nil {
+				result[*av.Day] = make(map[string]int)
+				result[*av.Day]["tweets"] = tweets
+				result[*av.Day]["following"] = following
+				result[*av.Day]["followers"] = followers
+				result[*av.Day]["likes"] = likes
+			}
 
-// func (s *Server) handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
-// 	file, _, err := r.FormFile("avatars")
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
+		}
+	}
 
-// 	usernames, err := readFile(file)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
+	fmt.Printf("%+v\n", result)
+	// // total := struct {
+	// // 	Day       string `json:"day"`
+	// // 	Tweets    int    `json:"tweets"`
+	// // 	Following int    `json:"following"`
+	// // 	Followers int    `json:"followers"`
+	// // 	Likes     int    `json:"likes"`
+	// // }{}
+	// totals := make(map[string]map[string]int)
+	// // totals := []struct {
+	// // 	Day       string `json:"day"`
+	// // 	Tweets    int    `json:"tweets"`
+	// // 	Following int    `json:"following"`
+	// // 	Followers int    `json:"followers"`
+	// // 	Likes     int    `json:"likes"`
+	// // }{}
 
-// 	twitterHandles := struct {
-// 		Username []string `json:"handles"`
-// 	}{
-// 		Username: usernames,
-// 	}
+	// for _, a := range avs {
+	// 	switch *a.Day {
+	// 	case time.Monday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Tuesday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Wednesday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Thursday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
 
-// 	render.Respond(w, r, twitterHandles)
-// }
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Friday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Saturday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	case time.Sunday.String():
+	// 		tweets += *a.Tweets
+	// 		following += *a.Following
+	// 		followers += *a.Followers
+	// 		likes += *a.Likes
+	// 		if totals[*a.Day] == nil {
+	// 			totals[*a.Day] = make(map[string]int)
+	// 			totals[*a.Day]["tweets"] = tweets
+	// 			totals[*a.Day]["following"] = following
+	// 			totals[*a.Day]["followers"] = followers
+	// 			totals[*a.Day]["likes"] = likes
+	// 		}
+	// 		// totals = append(totals, total)
+	// 	}
+	// }
 
-// func (s *Server) handleAvatarLookup(w http.ResponseWriter, r *http.Request) {
-
-// 	//Retrieve avatars from twitter api.(Will be automated - cronjob after every 24 hours)
-
-// }
-
-// func (s *Server) handleAddAvatar(w http.ResponseWriter, r *http.Request) {
-// 	avatarService := avatar.NewService(r.Context(), s.db)
-
-// 	avatarRequest := struct {
-// 		Username string `json:"username"`
-// 	}{}
-
-// 	if err := json.NewDecoder(r.Body).Decode(&avatarRequest); err != nil {
-// 		if len(avatarRequest.Username) == 0 {
-// 			render.Render(w, r, ErrInvalidRequest(ErrMissingUsername))
-// 			return
-// 		}
-// 	}
-
-// 	_, err := avatarService.Insert("5d0575344d9f7ff15e989174", avatarRequest.Username)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
-
-// 	render.Respond(w, r, http.NoBody)
-
-// }
-
-// func (s *Server) handleGetAvatar(w http.ResponseWriter, r *http.Request) {
-
-// 	avatarService := avatar.NewService(r.Context(), s.db)
-
-// 	avatars, err := avatarService.GetAll()
-// 	if err != nil {
-// 		s.log.Println(err)
-// 		return
-// 	}
-// 	fmt.Println(avatars)
-// }
+	render.Respond(w, r, avs)
+}
 
 func readFile(reader io.Reader) ([]string, error) {
 
