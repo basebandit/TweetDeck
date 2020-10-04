@@ -1,8 +1,12 @@
 <template>
   <v-row justify="center">
-    <v-dialog max-width="600px" v-model="uploading">
-      <Notification :message="snackbarMessage" :snackbar="snackbar" :type="snackbarType" />
-      <template v-slot:activator="{on,attrs}">
+    <v-dialog max-width="600px" v-model="dialog">
+      <Notification
+        :message="snackbarMessage"
+        :snackbar="snackbar"
+        :type="snackbarType"
+      />
+      <template v-slot:activator="{ on, attrs }">
         <v-btn color="success" v-on="on" v-bind="attrs">
           <v-icon left>mdi-plus</v-icon>Add new avatar
         </v-btn>
@@ -13,7 +17,11 @@
         </v-card-title>
         <v-card-text>
           <v-form class="px-3">
-            <v-file-input v-model="file" accept="text/csv" label="File input"></v-file-input>
+            <v-file-input
+              v-model="file"
+              accept="text/csv"
+              label="File input"
+            ></v-file-input>
             <v-btn class="secondary ma-2" @click="download">
               <v-icon>mdi-file-excel</v-icon>Download CSV Template
             </v-btn>
@@ -55,9 +63,24 @@ export default {
   methods: {
     upload() {
       let formData = new FormData();
-      formData.append("avatars", this.file);
+      if (this.file.type == "text/csv") {
+        formData.append("avatars", this.file);
 
-      this.$store.dispatch("avatars/upload", { token: this.token, formData });
+        this.$store.dispatch("avatars/upload", { token: this.token, formData });
+      } else {
+        /**eslint-disable */
+        console.error("non-csv file detected");
+        this.snackbarType = "error";
+        this.snackbarMessage = "Invalid file type";
+        this.snackbar = true;
+      }
+
+      //Reset the snackbar after 2 seconds
+      setTimeout(() => {
+        this.snackbarType = "";
+        this.snackbarMessage = "";
+        this.snackbar = false;
+      }, 2000);
     },
     download() {
       let csvContent = "usernames\n";
