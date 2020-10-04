@@ -17,7 +17,7 @@
           </v-card>
         </v-col>
       </v-row>
-      <v-row class="mb-3">
+      <!-- <v-row class="mb-3">
         <v-col cols="12">
           <v-card>
             <v-card-title class="headline">Total Daily Tweets</v-card-title>
@@ -33,7 +33,7 @@
             </v-card-text>
           </v-card>
         </v-col>
-      </v-row>
+      </v-row> -->
 
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
@@ -48,14 +48,12 @@
             >
               <v-row class="px-3">
                 <v-col>
-                  <div class="caption grey--text">Real Name</div>
-                  <div>{{ avatar.person }}</div>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>
-                    {{ avatar.username }}
-                  </div>
+                  <div>@{{ avatar.username }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of tweets</div>
@@ -72,12 +70,58 @@
               >Top 5 Daily Avatars By Tweets</v-card-title
             >
             <v-card-text>
-              <pie-chart :round="2" suffix="%" :data="tops.tweets" />
+              <pie-chart :round="2" suffix="%" :data="topFiveAvatarsByTweets" />
             </v-card-text>
           </v-card>
         </v-col>
       </v-row>
+
       <v-row class="mb-3">
+        <v-col cols="12" lg="8" md="8">
+          <v-card flat class="mx-auto" v-if="tops.following">
+            <v-card-title class="align-start"
+              >Top 5 Daily Avatars By Following</v-card-title
+            >
+            <div
+              v-for="(avatar, index) in tops.following"
+              :key="avatar.username"
+              :class="`avatar-${index + 1}`"
+            >
+              <v-row class="px-3">
+                <v-col>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Avatar</div>
+                  <div>@{{ avatar.username }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Number of followings</div>
+                  <div>{{ avatar.following }}</div>
+                </v-col>
+              </v-row>
+              <v-divider></v-divider>
+            </div>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="4" lg="4">
+          <v-card class="mx-auto pa-3" v-if="tops.following">
+            <v-card-title class="headline"
+              >Top 5 Daily Avatars By Following</v-card-title
+            >
+            <v-card-text>
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topFiveAvatarsByFollowing"
+              />
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- <v-row class="mb-3">
         <v-col cols="12">
           <v-card>
             <v-card-title class="headline">Total Daily Followers</v-card-title>
@@ -93,7 +137,7 @@
             </v-card-text>
           </v-card>
         </v-col>
-      </v-row>
+      </v-row> -->
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
           <v-card flat class="mx-auto" v-if="tops.followers">
@@ -107,12 +151,12 @@
             >
               <v-row class="px-3">
                 <v-col>
-                  <div class="caption grey--text">Real Name</div>
-                  <div>{{ avatar.person }}</div>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>{{ avatar.username }}</div>
+                  <div>@{{ avatar.username }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of followers</div>
@@ -129,7 +173,11 @@
               >Top 5 Daily Avatars By Followers</v-card-title
             >
             <v-card-text>
-              <pie-chart :round="2" suffix="%" :data="tops.followers" />
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topFiveAvatarsByFollowers"
+              />
             </v-card-text>
           </v-card>
         </v-col>
@@ -154,17 +202,6 @@ export default {
         Sat: 689,
         Sun: 920,
       },
-      // topWeeklyAvatarTweets: [
-      //   { handle: "Mwasya Kyalo", tweets: 269, person: "Francis Ngaruiya" },
-      //   { handle: "Harris Kimani", tweets: 249, person: "Stephen Ndungu" },
-      //   { handle: "Salma kambo", tweets: 152, person: "Stephen Ndungu" },
-      //   {
-      //     handle: "Kairitu karuiri",
-      //     tweets: 141,
-      //     person: "Josephine Waithiru",
-      //   },
-      //   { handle: "Kimani Otieno", tweets: 107, person: "Doughlas Marigiri" },
-      // ],
       totalDailyFollowers: {
         Mon: 480,
         Tue: 500,
@@ -235,10 +272,33 @@ export default {
         { total: this.totals.followers, icon: "mdi-thumb-up", name: "likes" },
       ];
     },
+    topFiveAvatarsByFollowers() {
+      const obj = {};
+      this.tops.followers.forEach(
+        (avatar) =>
+          (obj[avatar.username] =
+            (avatar.followers / this.totals.followers) * 100)
+      );
+      return obj;
+    },
+    topFiveAvatarsByFollowing() {
+      const obj = {};
+      this.tops.following.forEach(
+        (avatar) =>
+          (obj[avatar.username] =
+            (avatar.following / this.totals.following) * 100)
+      );
+      return obj;
+    },
+    topFiveAvatarsByTweets() {
+      const obj = {};
+      this.tops.tweets.forEach(
+        (avatar) =>
+          (obj[avatar.username] = (avatar.tweets / this.totals.tweets) * 100)
+      );
+      return obj;
+    },
   },
-  // methods: {
-
-  // },
 };
 </script>
 <style>
