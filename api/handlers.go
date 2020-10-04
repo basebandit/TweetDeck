@@ -567,201 +567,201 @@ func (s *Server) handleUpdateMember(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, http.NoBody)
 }
 
-func (s *Server) handleDailyStats(w http.ResponseWriter, r *http.Request) {
-	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
-	defer span.End()
+// func (s *Server) handleDailyStats(w http.ResponseWriter, r *http.Request) {
+// 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+// 	defer span.End()
 
-	_, ok := ctx.Value(KeyValues).(*Values)
-	if !ok {
-		s.log.Println("web value missing from context")
-		render.Render(w, r, ErrInternalServerError)
-		return
-	}
+// 	_, ok := ctx.Value(KeyValues).(*Values)
+// 	if !ok {
+// 		s.log.Println("web value missing from context")
+// 		render.Render(w, r, ErrInternalServerError)
+// 		return
+// 	}
 
-	var days int
+// 	var days int
 
-	day := time.Now().Weekday()
+// 	day := time.Now().Weekday()
 
-	switch day {
-	case time.Monday:
-		days = 1
-	case time.Tuesday:
-		days = 2
-	case time.Wednesday:
-		days = 3
-	case time.Thursday:
-		days = 4
-	case time.Friday:
-		days = 5
-	case time.Saturday:
-		days = 6
-	case time.Sunday:
-		days = 7
-	}
+// 	switch day {
+// 	case time.Monday:
+// 		days = 1
+// 	case time.Tuesday:
+// 		days = 2
+// 	case time.Wednesday:
+// 		days = 3
+// 	case time.Thursday:
+// 		days = 4
+// 	case time.Friday:
+// 		days = 5
+// 	case time.Saturday:
+// 		days = 6
+// 	case time.Sunday:
+// 		days = 7
+// 	}
 
-	avs, err := avatar.GetThePastDays(s.ctx, s.db, days)
-	if err != nil {
-		s.log.Printf("api: %v\n", err)
-		render.Render(w, r, ErrInternalServerError)
-		return
-	}
+// 	avs, err := avatar.GetThePastDays(s.ctx, s.db, days)
+// 	if err != nil {
+// 		s.log.Printf("api: %v\n", err)
+// 		render.Render(w, r, ErrInternalServerError)
+// 		return
+// 	}
 
-	// fmt.Printf("%+v\n", avs)
-	var (
-		tweets    int
-		likes     int
-		followers int
-		following int
-	)
-	result := make(map[string]map[string]int)
-	for _, av := range avs {
-		switch *av.Day {
-		case time.Wednesday.String():
-			tweets += *av.Tweets
-			following += *av.Following
-			followers += *av.Followers
-			likes += *av.Likes
+// 	// fmt.Printf("%+v\n", avs)
+// 	var (
+// 		tweets    int
+// 		likes     int
+// 		followers int
+// 		following int
+// 	)
+// 	result := make(map[string]map[string]int)
+// 	for _, av := range avs {
+// 		switch *av.Day {
+// 		case time.Wednesday.String():
+// 			tweets += *av.Tweets
+// 			following += *av.Following
+// 			followers += *av.Followers
+// 			likes += *av.Likes
 
-			if result[*av.Day] == nil {
-				result[*av.Day] = make(map[string]int)
-				result[*av.Day]["tweets"] = tweets
-				result[*av.Day]["following"] = following
-				result[*av.Day]["followers"] = followers
-				result[*av.Day]["likes"] = likes
-			}
+// 			if result[*av.Day] == nil {
+// 				result[*av.Day] = make(map[string]int)
+// 				result[*av.Day]["tweets"] = tweets
+// 				result[*av.Day]["following"] = following
+// 				result[*av.Day]["followers"] = followers
+// 				result[*av.Day]["likes"] = likes
+// 			}
 
-		case time.Thursday.String():
-			tweets += *av.Tweets
-			following += *av.Following
-			followers += *av.Followers
-			likes += *av.Likes
-			if result[*av.Day] == nil {
-				result[*av.Day] = make(map[string]int)
-				result[*av.Day]["tweets"] = tweets
-				result[*av.Day]["following"] = following
-				result[*av.Day]["followers"] = followers
-				result[*av.Day]["likes"] = likes
-			}
+// 		case time.Thursday.String():
+// 			tweets += *av.Tweets
+// 			following += *av.Following
+// 			followers += *av.Followers
+// 			likes += *av.Likes
+// 			if result[*av.Day] == nil {
+// 				result[*av.Day] = make(map[string]int)
+// 				result[*av.Day]["tweets"] = tweets
+// 				result[*av.Day]["following"] = following
+// 				result[*av.Day]["followers"] = followers
+// 				result[*av.Day]["likes"] = likes
+// 			}
 
-		}
-	}
+// 		}
+// 	}
 
-	fmt.Printf("%+v\n", result)
-	// // total := struct {
-	// // 	Day       string `json:"day"`
-	// // 	Tweets    int    `json:"tweets"`
-	// // 	Following int    `json:"following"`
-	// // 	Followers int    `json:"followers"`
-	// // 	Likes     int    `json:"likes"`
-	// // }{}
-	// totals := make(map[string]map[string]int)
-	// // totals := []struct {
-	// // 	Day       string `json:"day"`
-	// // 	Tweets    int    `json:"tweets"`
-	// // 	Following int    `json:"following"`
-	// // 	Followers int    `json:"followers"`
-	// // 	Likes     int    `json:"likes"`
-	// // }{}
+// 	fmt.Printf("%+v\n", result)
+// 	// // total := struct {
+// 	// // 	Day       string `json:"day"`
+// 	// // 	Tweets    int    `json:"tweets"`
+// 	// // 	Following int    `json:"following"`
+// 	// // 	Followers int    `json:"followers"`
+// 	// // 	Likes     int    `json:"likes"`
+// 	// // }{}
+// 	// totals := make(map[string]map[string]int)
+// 	// // totals := []struct {
+// 	// // 	Day       string `json:"day"`
+// 	// // 	Tweets    int    `json:"tweets"`
+// 	// // 	Following int    `json:"following"`
+// 	// // 	Followers int    `json:"followers"`
+// 	// // 	Likes     int    `json:"likes"`
+// 	// // }{}
 
-	// for _, a := range avs {
-	// 	switch *a.Day {
-	// 	case time.Monday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Tuesday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Wednesday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Thursday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
+// 	// for _, a := range avs {
+// 	// 	switch *a.Day {
+// 	// 	case time.Monday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Tuesday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Wednesday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Thursday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
 
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Friday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Saturday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	case time.Sunday.String():
-	// 		tweets += *a.Tweets
-	// 		following += *a.Following
-	// 		followers += *a.Followers
-	// 		likes += *a.Likes
-	// 		if totals[*a.Day] == nil {
-	// 			totals[*a.Day] = make(map[string]int)
-	// 			totals[*a.Day]["tweets"] = tweets
-	// 			totals[*a.Day]["following"] = following
-	// 			totals[*a.Day]["followers"] = followers
-	// 			totals[*a.Day]["likes"] = likes
-	// 		}
-	// 		// totals = append(totals, total)
-	// 	}
-	// }
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Friday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Saturday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	case time.Sunday.String():
+// 	// 		tweets += *a.Tweets
+// 	// 		following += *a.Following
+// 	// 		followers += *a.Followers
+// 	// 		likes += *a.Likes
+// 	// 		if totals[*a.Day] == nil {
+// 	// 			totals[*a.Day] = make(map[string]int)
+// 	// 			totals[*a.Day]["tweets"] = tweets
+// 	// 			totals[*a.Day]["following"] = following
+// 	// 			totals[*a.Day]["followers"] = followers
+// 	// 			totals[*a.Day]["likes"] = likes
+// 	// 		}
+// 	// 		// totals = append(totals, total)
+// 	// 	}
+// 	// }
 
-	render.Respond(w, r, avs)
-}
+// 	render.Respond(w, r, avs)
+// }
 
 func readFile(reader io.Reader) ([]string, error) {
 
