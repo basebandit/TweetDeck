@@ -617,7 +617,7 @@ export default {
           suspended++;
         } else {
           active++;
-          //we also calculate assigned ans unassigned here. Since you can only assign an account if
+          //we also calculate assigned and unassigned here. Since you can only assign an account if
           //it is not already suspended.
           if (avatar.assigned === 1) {
             assigned++;
@@ -664,7 +664,7 @@ export default {
       e(this);
       this.isAssigning = true;
       /**eslint-disable */
-      console.log("ASSIGN_", this.selected);
+      // console.log("ASSIGN_", this.selected);
       if (this.selected.length < 1) this.isAssigning = false;
     },
     reassign(e) {
@@ -698,7 +698,7 @@ export default {
         avatars: this.selectedAvatarsIDs,
       };
       /**eslint-disable */
-      console.log("PAYLOAD", payload);
+      // console.log("PAYLOAD", payload);
       this.$store.dispatch("avatars/assignAvatars", {
         token: this.token,
         assign: payload,
@@ -724,17 +724,17 @@ export default {
         router: this.$router,
       });
       /**eslint-disable */
-      console.log(payload);
+      // console.log(payload);
     },
     clicked(v) {
-      /**eslint-disable */
       // this.selected.forEach((idx) => {
       if (this.avatars[v[this.count]]) {
         if (Object.keys(this.avatars[v[this.count]]).length > 6) {
           this.selectedAvatarsIDs.push(this.avatars[v[this.count]].id);
         }
         // });
-        console.log("CLICKED", this.avatars, this.selectedAvatarsIDs, v);
+        /**eslint-disable */
+        // console.log("CLICKED", this.avatars, this.selectedAvatarsIDs, v);
         this.count++;
       }
     },
