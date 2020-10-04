@@ -12,10 +12,12 @@ const (
 	personUpdate = "/api/people/{id}/edit"
 	new          = "/api/people/new"
 
-	totals = "/api/totals"
+	totals     = "/api/totals"
+	dailyStats = "/api/totals/daily"
 
-	topFiveByFollowers = "/api/top/followers"
-	topFiveByTweets    = "/api/top/tweets"
+	// topFiveByFollowers = "/api/top/followers"
+	// topFiveByTweets    = "/api/top/tweets"
+	topFives = "/api/totals/top"
 
 	signup = "/api/signup"
 	login  = "/api/token"
@@ -45,10 +47,12 @@ func (s *Server) routes() {
 
 		//Totals
 		r.Get(totals, s.handleTotals)
+		r.Get(dailyStats, s.handleDailyStats)
 
-		//Top By category
-		r.Get(topFiveByTweets, s.handleTopFiveAvatarsByTweets)
-		r.Get(topFiveByFollowers, s.handleTopFiveByFollowers)
+		//Top In Each category (followers,following,tweets)
+		r.Get(topFives, s.handleTopFives)
+		// r.Get(topFiveByTweets, s.handleTopFiveAvatarsByTweets)
+		// r.Get(topFiveByFollowers, s.handleTopFiveByFollowers)
 	})
 
 	//==============Unauthenticated Routes===============
