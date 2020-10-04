@@ -121,6 +121,8 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 
 		q = q[:len(q)-1] //remove trailing ","
 
+		q += ` ON CONFLICT ON CONSTRAINT idx_profiles_created_at DO UPDATE SET avatar_id=EXCLUDED.avatar_id,followers=EXCLUDED.followers,"following"=EXCLUDED.following,tweets=EXCLUDED.tweets,likes=EXCLUDED.likes,bio=EXCLUDED.bio,"name"=EXCLUDED.name,twitter_id=EXCLUDED.twitter_id,profile_image_url=EXCLUDED.profile_image_url,last_tweet_time=EXCLUDED.last_tweet_time,join_date=EXCLUDED.join_date,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at`
+
 		if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
 			return errors.Wrap(err, "inserting multiple profiles")
 		}
