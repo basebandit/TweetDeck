@@ -245,6 +245,28 @@
             </v-card>
           </v-col>
         </v-row>
+        <v-row>
+          <v-col>
+            <v-card class="pa-5">
+              <v-card-title>
+                Suspended Accounts
+                <v-spacer></v-spacer>
+                <v-text-field
+                  v-model="search"
+                  append-icon="mdi-magnify"
+                  label="Search"
+                  single-line
+                  hide-details
+                ></v-text-field>
+              </v-card-title>
+              <v-data-table
+                :headers="headers"
+                :items="suspended"
+                :search="search"
+              ></v-data-table>
+            </v-card>
+          </v-col>
+        </v-row>
       </div>
     </v-container>
   </div>
@@ -257,7 +279,18 @@ import { mapGetters } from "vuex";
 export default {
   name: "Home",
   data() {
-    return {};
+    return {
+      search: "",
+      headers: [
+        {
+          text: "Avatar",
+          align: "start",
+          sortable: true,
+          value: "avatar",
+        },
+        { text: "Person", value: "person" },
+      ],
+    };
   },
   mounted() {
     this.$store.dispatch("people/getPeople", { token: this.token });
@@ -298,6 +331,19 @@ export default {
         assigned: assigned,
         unassigned: unassigned,
       };
+    },
+    suspended() {
+      const accts = [];
+      this.avatars.forEach((avatar) => {
+        if (Object.keys(avatar).length <= 6) {
+          accts.push({
+            avatar: `@${avatar.username}`,
+            person: avatar.person || "Unassigned",
+          });
+        }
+      });
+
+      return accts;
     },
     stats() {
       return [
