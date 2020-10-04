@@ -47,12 +47,9 @@ func (s *Server) routes() {
 
 		//Totals
 		r.Get(totals, s.handleTotals)
-		r.Get(dailyStats, s.handleDailyStats)
 
 		//Top In Each category (followers,following,tweets)
 		r.Get(topFives, s.handleTopFives)
-		// r.Get(topFiveByTweets, s.handleTopFiveAvatarsByTweets)
-		// r.Get(topFiveByFollowers, s.handleTopFiveByFollowers)
 	})
 
 	//==============Unauthenticated Routes===============
