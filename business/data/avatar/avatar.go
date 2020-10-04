@@ -471,27 +471,27 @@ func GetTopFiveByFollowing(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) 
 	return avatars, nil
 }
 
-// //GetTopFiveByTweets returns the top five avatars with highest tweets in descending order.
-// func GetTopFiveByTweets(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
-// 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
-// 	defer span.End()
+//GetTopFiveByTweets returns the top five avatars with highest tweets in descending order.
+func GetTopFiveByTweets(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
 
-// 	const q = `with allp as (select a.user_id, a.username, p.id, p.avatar_id, p.followers,
-// 		p.following,
-// 		p.tweets,
-// 		p.likes,
-// 		p.bio,
-// 		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username)
-// 	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by tweets desc limit 5`
+	const q = `with allp as (select a.user_id, a.username, p.id, p.avatar_id, p.followers,
+		p.following,
+		p.tweets,
+		p.likes,
+		p.bio,
+		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username)
+	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by tweets desc limit 5`
 
-// 	var avatars []*Avatar
+	var avatars []*Avatar
 
-// 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
-// 		return nil, err
-// 	}
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, err
+	}
 
-// 	return avatars, nil
-// }
+	return avatars, nil
+}
 
 //GetAvatarCountByUserID returns the number of avatars assigned to the user with the
 //given id. Returns -1 if error was encountered.
