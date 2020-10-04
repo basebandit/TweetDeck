@@ -37,13 +37,13 @@
 
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
-          <v-card flat class="mx-auto">
+          <v-card flat class="mx-auto" v-if="tops.tweets">
             <v-card-title class="align-start"
-              >Top 5 Weekly Avatars By Tweets</v-card-title
+              >Top 5 Daily Avatars By Tweets</v-card-title
             >
             <div
-              v-for="(avatar, index) in topWeeklyAvatarTweets"
-              :key="avatar.handle"
+              v-for="(avatar, index) in tops.tweets"
+              :key="avatar.username"
               :class="`avatar-${index + 1}`"
             >
               <v-row class="px-3">
@@ -53,7 +53,9 @@
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>{{ avatar.handle }}</div>
+                  <div>
+                    {{ avatar.username }}
+                  </div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of tweets</div>
@@ -65,16 +67,12 @@
           </v-card>
         </v-col>
         <v-col cols="12" md="4" lg="4">
-          <v-card class="mx-auto pa-3">
+          <v-card class="mx-auto pa-3" v-if="tops.tweets">
             <v-card-title class="headline"
-              >Top 5 Weekly Avatars By Tweets</v-card-title
+              >Top 5 Daily Avatars By Tweets</v-card-title
             >
             <v-card-text>
-              <pie-chart
-                :round="2"
-                suffix="%"
-                :data="topWeeklyAvatarsByTweets"
-              />
+              <pie-chart :round="2" suffix="%" :data="tops.tweets" />
             </v-card-text>
           </v-card>
         </v-col>
@@ -98,13 +96,13 @@
       </v-row>
       <v-row class="mb-3">
         <v-col cols="12" lg="8" md="8">
-          <v-card flat class="mx-auto">
+          <v-card flat class="mx-auto" v-if="tops.followers">
             <v-card-title class="align-start"
-              >Top 5 Weekly Avatars By Followers</v-card-title
+              >Top 5 Daily Avatars By Followers</v-card-title
             >
             <div
-              v-for="(avatar, index) in topWeeklyAvatarFollowers"
-              :key="avatar.handle"
+              v-for="(avatar, index) in tops.followers"
+              :key="avatar.username"
               :class="`avatar-${index + 1}`"
             >
               <v-row class="px-3">
@@ -114,7 +112,7 @@
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Avatar</div>
-                  <div>{{ avatar.handle }}</div>
+                  <div>{{ avatar.username }}</div>
                 </v-col>
                 <v-col>
                   <div class="caption grey--text">Number of followers</div>
@@ -126,16 +124,12 @@
           </v-card>
         </v-col>
         <v-col cols="12" md="4" lg="4">
-          <v-card class="pa-3">
+          <v-card class="pa-3" v-if="tops.followers">
             <v-card-title class="headline"
-              >Top 5 Weekly Avatars By Followers</v-card-title
+              >Top 5 Daily Avatars By Followers</v-card-title
             >
             <v-card-text>
-              <pie-chart
-                :round="2"
-                suffix="%"
-                :data="topWeeklyAvatarsByFollowers"
-              />
+              <pie-chart :round="2" suffix="%" :data="tops.followers" />
             </v-card-text>
           </v-card>
         </v-col>
@@ -160,17 +154,17 @@ export default {
         Sat: 689,
         Sun: 920,
       },
-      topWeeklyAvatarTweets: [
-        { handle: "Mwasya Kyalo", tweets: 269, person: "Francis Ngaruiya" },
-        { handle: "Harris Kimani", tweets: 249, person: "Stephen Ndungu" },
-        { handle: "Salma kambo", tweets: 152, person: "Stephen Ndungu" },
-        {
-          handle: "Kairitu karuiri",
-          tweets: 141,
-          person: "Josephine Waithiru",
-        },
-        { handle: "Kimani Otieno", tweets: 107, person: "Doughlas Marigiri" },
-      ],
+      // topWeeklyAvatarTweets: [
+      //   { handle: "Mwasya Kyalo", tweets: 269, person: "Francis Ngaruiya" },
+      //   { handle: "Harris Kimani", tweets: 249, person: "Stephen Ndungu" },
+      //   { handle: "Salma kambo", tweets: 152, person: "Stephen Ndungu" },
+      //   {
+      //     handle: "Kairitu karuiri",
+      //     tweets: 141,
+      //     person: "Josephine Waithiru",
+      //   },
+      //   { handle: "Kimani Otieno", tweets: 107, person: "Doughlas Marigiri" },
+      // ],
       totalDailyFollowers: {
         Mon: 480,
         Tue: 500,
@@ -212,10 +206,11 @@ export default {
   mounted() {
     this.$store.dispatch("people/getPeople", { token: this.token });
     this.$store.dispatch("stats/getTotals", { token: this.token });
+    this.$store.dispatch("stats/getTops", { token: this.token });
   },
   computed: {
     ...mapGetters("people", ["team"]),
-    ...mapGetters("stats", ["totals"]),
+    ...mapGetters("stats", ["totals", "tops"]),
     token() {
       return window.localStorage.getItem("user");
     },
@@ -240,44 +235,10 @@ export default {
         { total: this.totals.followers, icon: "mdi-thumb-up", name: "likes" },
       ];
     },
-    topWeeklyAvatarsByTweets() {
-      let total = 0;
-      this.topWeeklyAvatarTweets.forEach((avatar) => {
-        total += avatar.tweets;
-      });
-
-      const obj = {};
-      this.topWeeklyAvatarTweets.forEach(
-        (avatar) => (obj[avatar.handle] = (avatar.tweets / total) * 100)
-      );
-
-      return obj;
-    },
-    topWeeklyAvatarsByFollowers() {
-      let total = 0;
-      this.topWeeklyAvatarFollowers.forEach((avatar) => {
-        total += avatar.followers;
-      });
-
-      const obj = {};
-      this.topWeeklyAvatarFollowers.forEach(
-        (avatar) => (obj[avatar.handle] = (avatar.followers / total) * 100)
-      );
-
-      return obj;
-    },
   },
-  methods: {
-    sum(arr, prop) {
-      var total = 0;
-      for (var i = 0, _len = arr.length; i < _len; i++) {
-        total += arr[i][prop];
-      }
-      /**eslint-disable*/
-      console.log(total);
-      return total;
-    },
-  },
+  // methods: {
+
+  // },
 };
 </script>
 <style>
