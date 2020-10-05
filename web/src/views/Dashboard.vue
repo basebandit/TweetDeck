@@ -98,7 +98,7 @@
           <v-col cols="12" lg="8" md="8">
             <v-card flat class="mx-auto" v-if="tops.tweets">
               <v-card-title class="align-start"
-                >Top 5 Daily Avatars By Tweets</v-card-title
+                >Top 5 Avatars By Tweets</v-card-title
               >
               <div
                 v-for="(avatar, index) in tops.tweets"
@@ -126,7 +126,7 @@
           <v-col cols="12" md="4" lg="4">
             <v-card class="mx-auto pa-3" v-if="tops.tweets">
               <v-card-title class="headline"
-                >Top 5 Daily Avatars By Tweets</v-card-title
+                >Top 5 Avatars By Tweets</v-card-title
               >
               <v-card-text>
                 <pie-chart
@@ -143,7 +143,7 @@
           <v-col cols="12" lg="8" md="8">
             <v-card flat class="mx-auto" v-if="tops.following">
               <v-card-title class="align-start"
-                >Top 5 Daily Avatars By Following</v-card-title
+                >Top 5 Avatars By Following</v-card-title
               >
               <div
                 v-for="(avatar, index) in tops.following"
@@ -171,7 +171,7 @@
           <v-col cols="12" md="4" lg="4">
             <v-card class="mx-auto pa-3" v-if="tops.following">
               <v-card-title class="headline"
-                >Top 5 Daily Avatars By Following</v-card-title
+                >Top 5 Avatars By Following</v-card-title
               >
               <v-card-text>
                 <pie-chart
@@ -205,7 +205,7 @@
           <v-col cols="12" lg="8" md="8">
             <v-card flat class="mx-auto" v-if="tops.followers">
               <v-card-title class="align-start"
-                >Top 5 Daily Avatars By Followers</v-card-title
+                >Top 5 Avatars By Followers</v-card-title
               >
               <div
                 v-for="(avatar, index) in tops.followers"
@@ -233,7 +233,7 @@
           <v-col cols="12" md="4" lg="4">
             <v-card class="pa-3" v-if="tops.followers">
               <v-card-title class="headline"
-                >Top 5 Daily Avatars By Followers</v-card-title
+                >Top 5 Avatars By Followers</v-card-title
               >
               <v-card-text>
                 <pie-chart
