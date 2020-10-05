@@ -8,40 +8,33 @@ Ensure you have docker and docker-compose installed.
 Make sure that no program is running on port 5432
       sudo service postgresql stop
 Then there is a docker-compose file for our postgresql container image. 
-Run it like so
-      docker-compose -f docker-compose.test.yml up postgres
+Run it like so on your terminal:
+        make db-up
+        
+To stop it run:
+
+        make db-down
 
 STEP 2
 ======
 Run the admin binary with the following command
 
-./admin keygen ~/.avatarlysis
+        make keygen
 
 STEP 3
 ======
-There is an env.sh file that sets the environment variables.
-Import it in your environment like so:
+Run the server binary (this should never run before the db)
 
-source env.sh
-
-STEP 4
-=======
-
-Run the app binary
-
-./app
+        make server
+        
+To stop the serve just hit ctrl+c.
 
 STEP 5
 =======
 Run the frontend.To run it you will use docker to load the frontend image like so 
 
-  docker load -i frontend.tar
+        make web-up
+ 
+To stop the frontend server run:
 
-After loading it in memory.Run the image like so
-
-  docker run -it -p 8080:80 --rm avatarlysis:web-dev
-
-Then in your browser, go to http://localhost:8080
-
-   username: testuser1@gmail.com
-   password: gophers
+        make web-down
