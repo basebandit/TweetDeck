@@ -12,9 +12,11 @@ db-up:
 db-down:
 	@docker-compose -f docker-compose.server.yml down 
 	
+db-log:
+	@docker logs -f postgres
+
 server:
 	./app
-
 
 web-up:
 	@docker load -i frontend.tar
@@ -23,6 +25,6 @@ web-up:
 web-down:
 	@docker-compose -f docker-compose.web.yml down
 
-clean:
+clean: db-down
 	@docker-compose rm
 	@docker system prune --volumes
