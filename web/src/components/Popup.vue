@@ -74,7 +74,6 @@ export default {
         this.snackbarMessage = "Invalid file type";
         this.snackbar = true;
       }
-
       //Reset the snackbar after 2 seconds
       setTimeout(() => {
         this.snackbarType = "";
