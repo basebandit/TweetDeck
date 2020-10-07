@@ -1,5 +1,6 @@
 <template>
   <div class="home">
+    <report-dialog> </report-dialog>
     <v-toolbar
       class="pt-3"
       extended
@@ -17,7 +18,7 @@
             color="primary"
             dark
             class="text-center"
-            @click="dailyReport"
+            @click.stop="openReportDialog"
           >
             <v-icon left>mdi-file-pdf</v-icon> Print Report
           </v-btn>
@@ -122,6 +123,17 @@
                 <v-divider></v-divider>
               </div>
             </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Tweets</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
+              </v-card-text>
+            </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
             <v-card class="mx-auto pa-3" v-if="tops.tweets">
@@ -134,6 +146,17 @@
                   suffix="%"
                   :data="topFiveAvatarsByTweets"
                 />
+              </v-card-text>
+            </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Tweets</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
               </v-card-text>
             </v-card>
           </v-col>
@@ -167,6 +190,17 @@
                 <v-divider></v-divider>
               </div>
             </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Following</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
+              </v-card-text>
+            </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
             <v-card class="mx-auto pa-3" v-if="tops.following">
@@ -179,6 +213,17 @@
                   suffix="%"
                   :data="topFiveAvatarsByFollowing"
                 />
+              </v-card-text>
+            </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Following</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
               </v-card-text>
             </v-card>
           </v-col>
@@ -229,6 +274,17 @@
                 <v-divider></v-divider>
               </div>
             </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Followers</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
+              </v-card-text>
+            </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
             <v-card class="pa-3" v-if="tops.followers">
@@ -241,6 +297,17 @@
                   suffix="%"
                   :data="topFiveAvatarsByFollowers"
                 />
+              </v-card-text>
+            </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Followers</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
               </v-card-text>
             </v-card>
           </v-col>
@@ -274,10 +341,12 @@
 
 <script>
 import { jsPDF } from "jspdf";
+import ReportDialog from "@/components/ReportDialog";
 // import html2canvas from "html2canvas";
 import { mapGetters } from "vuex";
 export default {
   name: "Home",
+  components: { ReportDialog },
   data() {
     return {
       search: "",
@@ -394,6 +463,9 @@ export default {
     },
   },
   methods: {
+    openReportDialog() {
+      this.$store.dispatch("report/showDialog");
+    },
     dailyReport() {
       let doc = new jsPDF("p", "pt", "A4");
       let margins = {
