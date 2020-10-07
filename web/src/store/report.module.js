@@ -1,23 +1,30 @@
 export default{
   namespaced: true,
   state:{
-  dialog: false
+  dialog: false,
+  dailyReportStats:{},
   },
   getters:{
     showDialog:(state) => state.dialog,
+    dailyReportStats:(state)=> state.dailyReportStats,
   },
   actions:{
-    showDialog({commit}){
-      commit("mutateDialog",{show:true})
+    showDialog({commit},payload){
+      const {dailyStats} = payload
+      commit("openDialog",{dailyStats})
     },
     hideDialog({commit}){
-      commit("mutateDialog",{show:false})
+      commit("closeDialog")
     }
   },
   mutations:{
-    mutateDialog(state,payload){
-      const {show} = payload
-      state.dialog = show
-    } 
+    openDialog(state,payload){
+      const {dailyStats} = payload
+      state.dialog = true
+      state.dailyReportStats = dailyStats
+    } ,
+    closeDialog(state){
+      state.dialog = false
+    }
   }
 };
