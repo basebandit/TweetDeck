@@ -47,13 +47,13 @@
                 </v-btn>
                 <span class="mx-1">|</span>
                 <v-btn text color="primary">
-                  <v-icon>mdi-account-multiple-remove</v-icon>
+                  <v-icon>mdi-account-multiple-check</v-icon>
                   <span class="mx-2">{{ accounts.assigned }}</span> Assigned
                   Active Accounts
                 </v-btn>
                 <span class="mx-1">|</span>
                 <v-btn text disabled>
-                  <v-icon>mdi-account-multiple-check</v-icon>
+                  <v-icon>mdi-account-multiple-remove</v-icon>
                   <span class="mx-2">{{ accounts.unassigned }}</span> Unassigned
                   Active Accounts
                 </v-btn>
@@ -312,6 +312,74 @@
             </v-card>
           </v-col>
         </v-row>
+
+        <v-row class="mb-3">
+          <v-col cols="12" lg="8" md="8">
+            <v-card flat class="mx-auto" v-if="tops.likes">
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Likes</v-card-title
+              >
+              <div
+                v-for="(avatar, index) in tops.likes"
+                :key="avatar.username"
+                :class="`avatar-${index + 1}`"
+              >
+                <v-row class="px-3">
+                  <v-col>
+                    <div class="caption grey--text">Person</div>
+                    <div>{{ avatar.person || "Unassigned" }}</div>
+                  </v-col>
+                  <v-col>
+                    <div class="caption grey--text">Avatar</div>
+                    <div>@{{ avatar.username }}</div>
+                  </v-col>
+                  <v-col>
+                    <div class="caption grey--text">Number of likes</div>
+                    <div>{{ avatar.likes }}</div>
+                  </v-col>
+                </v-row>
+                <v-divider></v-divider>
+              </div>
+            </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Likes</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
+              </v-card-text>
+            </v-card>
+          </v-col>
+          <v-col cols="12" md="4" lg="4">
+            <v-card class="pa-3" v-if="tops.likes">
+              <v-card-title class="headline"
+                >Top 5 Avatars By Likes</v-card-title
+              >
+              <v-card-text>
+                <pie-chart
+                  :round="2"
+                  suffix="%"
+                  :data="topFiveAvatarsByLikes"
+                />
+              </v-card-text>
+            </v-card>
+
+            <v-card flat disabled class="mx-auto" v-else>
+              <v-card-title class="align-start"
+                >Top 5 Avatars By Likes</v-card-title
+              >
+
+              <v-card-text>
+                <v-icon large left>mdi-cloud-alert</v-icon>
+                <span class="grey--text">Oops not fetched yet!</span>
+              </v-card-text>
+            </v-card>
+          </v-col>
+        </v-row>
+
         <v-row>
           <v-col>
             <v-card class="pa-5">
@@ -350,6 +418,7 @@ export default {
   data() {
     return {
       search: "",
+      today: new Date().toString(),
       headers: [
         {
           text: "Avatar",
@@ -444,6 +513,14 @@ export default {
       );
       return obj;
     },
+    topFiveAvatarsByLikes() {
+      const obj = {};
+      this.tops.likes.forEach(
+        (avatar) =>
+          (obj[avatar.username] = (avatar.likes / this.totals.likes) * 100)
+      );
+      return obj;
+    },
     topFiveAvatarsByFollowing() {
       const obj = {};
       this.tops.following.forEach(
@@ -464,7 +541,20 @@ export default {
   },
   methods: {
     openReportDialog() {
-      this.$store.dispatch("report/showDialog");
+      let dailyStats = {
+        date: this.today,
+        activeAccts: this.accounts.active,
+        totalLikes: this.totals.likes,
+        totalFollowers: this.totals.followers,
+        totalFollowing: this.totals.following,
+        totalTweets: this.totals.tweets,
+        topFiveAvatarsByFollowers: this.topFiveAvatarsByFollowers,
+        topFiveAvatarsByFollowing: this.topFiveAvatarsByFollowing,
+        topFiveAvatarsByLikes: this.topFiveAvatarsByLikes,
+        topFiveAvatarsByTweets: this.topFiveAvatarsByTweets,
+        tops: this.tops,
+      };
+      this.$store.dispatch("report/showDialog", { dailyStats });
     },
     dailyReport() {
       let doc = new jsPDF("p", "pt", "A4");
