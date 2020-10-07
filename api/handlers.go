@@ -476,14 +476,23 @@ func (s *Server) handleTopFives(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	likes, err := avatar.GetTopFiveByLikes(s.ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
 	topFives := struct {
 		Following []*avatar.Avatar `json:"following"`
 		Followers []*avatar.Avatar `json:"followers"`
 		Tweets    []*avatar.Avatar `json:"tweets"`
+		Likes     []*avatar.Avatar `json:"likes"`
 	}{
 		Following: following,
 		Followers: followers,
 		Tweets:    tweets,
+		Likes:     likes,
 	}
 
 	render.Respond(w, r, topFives)
