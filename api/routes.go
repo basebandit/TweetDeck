@@ -3,16 +3,19 @@ package api
 import "github.com/go-chi/chi"
 
 const (
-	avatars         = "/api/avatar/"
-	avatarUpload    = "/api/avatar/upload"
-	avatarAssign    = "/api/avatar/assign"
-	avatarsByUserID = "/api/avatar/{id}"
+	avatars          = "/api/avatar/"
+	avatarsSuspended = "/api/avatar/suspended"
+	avatarUpload     = "/api/avatar/upload"
+	avatarAssign     = "/api/avatar/assign"
+	avatarsByUserID  = "/api/avatar/{id}"
 
 	people       = "/api/people"
 	personUpdate = "/api/people/{id}/edit"
 	new          = "/api/people/new"
 
-	totals     = "/api/totals"
+	totals       = "/api/totals"
+	totalAvatars = "/api/totals/avatars"
+
 	dailyStats = "/api/totals/daily"
 
 	// topFiveByFollowers = "/api/top/followers"
@@ -39,6 +42,7 @@ func (s *Server) routes() {
 		r.Post(avatarAssign, s.handleAssignAvatars)
 		r.Get(avatarsByUserID, s.handleAvatarsByUserID)
 		r.Get(avatars, s.handleAvatars)
+		r.Get(avatarsSuspended, s.handleSuspendedAvatars)
 
 		//People
 		r.Get(people, s.handlePeople)
@@ -47,6 +51,7 @@ func (s *Server) routes() {
 
 		//Totals
 		r.Get(totals, s.handleTotals)
+		r.Get(totalAvatars, s.handleTotalAvatars)
 
 		//Top In Each category (followers,following,tweets)
 		r.Get(topFives, s.handleTopFives)
