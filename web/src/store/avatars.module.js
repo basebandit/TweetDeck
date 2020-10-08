@@ -5,10 +5,12 @@ export default {
   state: {
     avatars: [],
     fetchAvatars: false,
+    fetchSuspendedAvatars:false,
     assignAvatars: false,
     avatarsByUser: false,
     uploadAvatars:false,
-    userAvatars: []
+    userAvatars: [],
+    suspendedAvatars:[]
   },
 
   getters: {
@@ -17,6 +19,7 @@ export default {
     uploading:(state) => state.uploadAvatars,
     assigning: (state) => state.assignAvatars,
     fetchAvatarsByUser: (state) => state.avatarsByUser,
+    suspendedAvatars:(state)=> state.suspendedAvatars,
     userAvatars: (state) => state.userAvatars
   },
 
@@ -38,8 +41,22 @@ export default {
         })
       })
     },
+    getSuspendedAvatars({commit},payload){
+  const {token} = payload
+  commit("suspendedAvatarsFetchStatus")
+  AvatarService.getSuspendedAvatars(token).then(response=>{
+      if (response.status == 200){
+        commit("fetchSuspendedAvatarsSuccess",{
+          avatars:response.data,
+        })
+      }
+  }).catch(err => {
+    commit("fetchSuspendedAvatarsFailure",{
+      message: err.response.data.error
+   })
+  })
+    },
     upload({commit},payload) {
-     
    const {token,formData} = payload
         commit("uploadAvatarStatus")
          AvatarService.uploadAvatars(token,formData).then(response=>{
@@ -84,6 +101,7 @@ export default {
     updateAvatarFetchStatus(state) {
       state.fetchAvatars = true;
     },
+   
     avatarFetchSuccess(state, payload) {
       const { avatars } = payload;
       /**eslint-disable */
@@ -140,6 +158,20 @@ export default {
       state.uploadAvatars = false
       /**eslint-disable */
       console.error(message)
-    }
+    },
+    suspendedAvatarsFetchStatus(state){
+      state.fetchSuspendedAvatars = true;
+          },
+    fetchSuspendedAvatarsSuccess(state,payload){
+      const {avatars} = payload
+  state.suspendedAvatars = avatars
+  state.fetchSuspendedAvatars =false
+     },
+     fetchSuspendedAvatarsFailure(state,payload){
+      const {message} = payload
+  state.fetchSuspendedAvatars =false
+   /**eslint-disable */
+   console.error(message)
+     },
   },
 };
