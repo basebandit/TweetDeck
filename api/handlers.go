@@ -272,6 +272,33 @@ func (s *Server) handleAvatars(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, a)
 }
 
+func (s *Server) handleTotalAvatars(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.totalavatars")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	total, err := avatar.GetTotalAccounts(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	t := struct {
+		Count int `json:"count"`
+	}{
+		Count: total,
+	}
+
+	render.Respond(w, r, t)
+}
+
 func (s *Server) handleAvatarsByUserID(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
 	defer span.End()
@@ -442,6 +469,27 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Respond(w, r, totals)
+}
+
+func (s *Server) handleSuspendedAvatars(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	avs, err := avatar.GetSuspendedAccounts(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	render.Respond(w, r, avs)
 }
 
 func (s *Server) handleTopFives(w http.ResponseWriter, r *http.Request) {
