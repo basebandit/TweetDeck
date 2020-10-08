@@ -7,6 +7,9 @@ export default {
   getAvatars(token) {
     return Api(token).get('/api/avatar/')
   },
+  getSuspendedAvatars(token){
+    return Api(token).get('/api/avatar/suspended')
+  },
   assignAvatars(token, payload) {
     return Api(token).post('/api/avatar/assign', payload)
   },
