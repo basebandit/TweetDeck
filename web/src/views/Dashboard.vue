@@ -136,7 +136,10 @@
             </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
-            <v-card class="mx-auto pa-3" v-if="tops.tweets">
+            <v-card
+              class="mx-auto pa-3"
+              v-if="Object.keys(topFiveAvatarsByTweets).length > 0"
+            >
               <v-card-title class="headline"
                 >Top 5 Avatars By Tweets</v-card-title
               >
@@ -203,7 +206,10 @@
             </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
-            <v-card class="mx-auto pa-3" v-if="tops.following">
+            <v-card
+              class="mx-auto pa-3"
+              v-if="Object.keys(topFiveAvatarsByFollowing).length > 0"
+            >
               <v-card-title class="headline"
                 >Top 5 Avatars By Following</v-card-title
               >
@@ -287,7 +293,10 @@
             </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
-            <v-card class="pa-3" v-if="tops.followers">
+            <v-card
+              class="pa-3"
+              v-if="Object.keys(topFiveAvatarsByFollowers).length > 0"
+            >
               <v-card-title class="headline"
                 >Top 5 Avatars By Followers</v-card-title
               >
@@ -354,7 +363,10 @@
             </v-card>
           </v-col>
           <v-col cols="12" md="4" lg="4">
-            <v-card class="pa-3" v-if="tops.likes">
+            <v-card
+              class="pa-3"
+              v-if="Object.keys(topFiveAvatarsByLikes).length > 0"
+            >
               <v-card-title class="headline"
                 >Top 5 Avatars By Likes</v-card-title
               >
@@ -435,36 +447,37 @@ export default {
     this.$store.dispatch("stats/getTotals", { token: this.token });
     this.$store.dispatch("stats/getTops", { token: this.token });
     this.$store.dispatch("avatars/getAvatars", { token: this.token });
+    this.$store.dispatch("avatars/getSuspendedAvatars", { token: this.token });
   },
   computed: {
     ...mapGetters("people", ["team"]),
-    ...mapGetters("avatars", ["avatars"]),
+    ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
     ...mapGetters("stats", ["totals", "tops"]),
     token() {
       return window.localStorage.getItem("user");
     },
     accounts() {
-      let suspended = 0;
+      // let suspended = 0;
       let active = 0;
       let assigned = 0;
       let unassigned = 0;
-      this.avatars.forEach((avatar) => {
-        if (Object.keys(avatar).length <= 6) {
-          suspended++;
-        } else {
-          active++;
-          //we also calculate assigned and unassigned here. Since you can only assign an account if
-          //it is not already suspended.
-          if (avatar.assigned === 1) {
-            assigned++;
-          } else if (avatar.assigned === 0) {
-            unassigned++;
+      if (this.avatars.length > 0) {
+        this.avatars.forEach((avatar) => {
+          if (Object.keys(avatar).length > 6) {
+            active++;
+            //we also calculate assigned and unassigned here. Since you can only assign an account if
+            //it is not already suspended.
+            if (avatar.assigned === 1) {
+              assigned++;
+            } else if (avatar.assigned === 0) {
+              unassigned++;
+            }
           }
-        }
-      });
+        });
+      }
 
       return {
-        suspended: suspended,
+        suspended: this.suspendedAvatars.length,
         active: active,
         assigned: assigned,
         unassigned: unassigned,
@@ -472,21 +485,20 @@ export default {
     },
     suspended() {
       const accts = [];
-      this.avatars.forEach((avatar) => {
-        if (Object.keys(avatar).length <= 6) {
+      if (this.suspendedAvatars.length > 0) {
+        this.suspendedAvatars.forEach((avatar) => {
           accts.push({
             avatar: `@${avatar.username}`,
             person: avatar.person || "Unassigned",
           });
-        }
-      });
-
+        });
+      }
       return accts;
     },
     stats() {
       return [
         {
-          total: this.totals.avatars,
+          total: this.totals.avatars + this.suspendedAvatars.length,
           icon: "mdi-account-supervisor",
           name: "avatars",
         },
@@ -506,36 +518,44 @@ export default {
     },
     topFiveAvatarsByFollowers() {
       const obj = {};
-      this.tops.followers.forEach(
-        (avatar) =>
-          (obj[avatar.username] =
-            (avatar.followers / this.totals.followers) * 100)
-      );
+      if (this.tops.followers) {
+        this.tops.followers.forEach(
+          (avatar) =>
+            (obj[avatar.username] =
+              (avatar.followers / this.totals.followers) * 100)
+        );
+      }
       return obj;
     },
     topFiveAvatarsByLikes() {
       const obj = {};
-      this.tops.likes.forEach(
-        (avatar) =>
-          (obj[avatar.username] = (avatar.likes / this.totals.likes) * 100)
-      );
+      if (this.tops.likes) {
+        this.tops.likes.forEach(
+          (avatar) =>
+            (obj[avatar.username] = (avatar.likes / this.totals.likes) * 100)
+        );
+      }
       return obj;
     },
     topFiveAvatarsByFollowing() {
       const obj = {};
-      this.tops.following.forEach(
-        (avatar) =>
-          (obj[avatar.username] =
-            (avatar.following / this.totals.following) * 100)
-      );
+      if (this.tops.following) {
+        this.tops.following.forEach(
+          (avatar) =>
+            (obj[avatar.username] =
+              (avatar.following / this.totals.following) * 100)
+        );
+      }
       return obj;
     },
     topFiveAvatarsByTweets() {
       const obj = {};
-      this.tops.tweets.forEach(
-        (avatar) =>
-          (obj[avatar.username] = (avatar.tweets / this.totals.tweets) * 100)
-      );
+      if (this.tops.tweets) {
+        this.tops.tweets.forEach(
+          (avatar) =>
+            (obj[avatar.username] = (avatar.tweets / this.totals.tweets) * 100)
+        );
+      }
       return obj;
     },
   },
