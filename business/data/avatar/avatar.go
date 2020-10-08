@@ -196,7 +196,101 @@ func Delete(ctx context.Context, db *sqlx.DB, id string, now time.Time) error {
 	return nil
 }
 
-//Get retrieves all Avatars from the database.
+//GetSuspendedAccounts retrieves all suspended accounts
+func GetSuspendedAccounts(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getsuspendedaccounts")
+	defer span.End()
+
+	const q = `select followers,following,tweets,likes,profile_image_url, join_date,bio,a.username,(select concat(firstname,' ',lastname) as username from users where id=user_id) as person from avatars a left join profiles p on p.avatar_id=a.id and p.created_at=current_date where p.avatar_id is null`
+
+	avatars := []*Avatar{}
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, errors.Wrap(err, "selecting suspended accounts/avatars")
+	}
+
+	for _, avatar := range avatars {
+		if avatar.UserID != nil {
+			avatar.Assigned = intPointer(1)
+		} else {
+			avatar.Assigned = intPointer(0)
+		}
+	}
+
+	return avatars, nil
+}
+
+//GetTotalAccounts retrieves all Avatars from the database.
+func GetTotalAccounts(ctx context.Context, db *sqlx.DB) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
+	defer span.End()
+
+	const q = `select count(*) from avatars`
+
+	var total int
+	if err := db.SelectContext(ctx, &total, q); err != nil {
+		return total, errors.Wrap(err, "selecting avatars")
+	}
+
+	return total, nil
+}
+
+//Get retrieves the most recent Avatars from the database.
+// func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
+// 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
+// 	defer span.End()
+
+// 	const q = `with allp as (
+// 	SELECT
+// 	a.id,
+// 	a.username,
+// 	a.user_id,
+// 	p.followers,
+// 	p.following,
+// 	p.tweets,
+// 	p.profile_image_url,
+// 	p.join_date,
+// 	p.likes,
+// 	p.bio,
+// 	p.created_at,
+// 	row_number() over (
+// 		partition by
+// 		a.id,
+// 		a.user_id ,
+// 		a.username order by p.created_at desc,
+// 		p.id desc) as priority_number from
+// 		avatars a LEFT JOIN profiles p ON
+// 		a.id = p.avatar_id
+// 		)
+// 		select
+// 		allp.id,
+// 		allp.username,
+// 		allp.user_id,
+// 		(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,
+// 		allp.followers,
+// 		allp.following,
+// 		allp.tweets,
+// 		allp.profile_image_url,
+// 		allp.join_date,
+// 		allp.likes,
+// 		allp.bio from allp where priority_number = 1;`
+
+// 	avatars := []*Avatar{}
+// 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+// 		return nil, errors.Wrap(err, "selecting avatars")
+// 	}
+
+// 	for _, avatar := range avatars {
+// 		if avatar.UserID != nil {
+// 			avatar.Assigned = intPointer(1)
+// 		} else {
+// 			avatar.Assigned = intPointer(0)
+// 		}
+// 	}
+
+// 	return avatars, nil
+// }
+
+//Get retrieves the most recent Avatars from the database.
 func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
 	defer span.End()
@@ -213,6 +307,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 	p.join_date,
 	p.likes,
 	p.bio,
+	p.created_at,
 	row_number() over (
 		partition by 
 		a.id,
@@ -233,7 +328,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 		allp.profile_image_url,
 		allp.join_date,
 		allp.likes,
-		allp.bio from allp where priority_number = 1;`
+		allp.bio from allp where priority_number = 1 and allp.created_at=current_date;`
 
 	avatars := []*Avatar{}
 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
@@ -411,10 +506,19 @@ func AggregateAvatarByUserID(ctx context.Context, db *sqlx.DB, userID string) (A
 	)
 
 	for _, a := range avatars {
-		tweets += *a.Tweets
-		likes += *a.Likes
-		following += *a.Following
-		followers += *a.Followers
+		if a.Tweets != nil {
+			tweets += *a.Tweets
+		}
+
+		if a.Likes != nil {
+			likes += *a.Likes
+		}
+		if a.Following != nil {
+			following += *a.Following
+		}
+		if a.Followers != nil {
+			followers += *a.Followers
+		}
 	}
 
 	avatar.Likes = intPointer(likes)
