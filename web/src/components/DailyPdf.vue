@@ -78,29 +78,49 @@
           </div>
         </v-col>
       </v-row>
-      <v-row>
+      <v-row class="my-3">
         <v-col>
-          <div class="text-decoration-underline">TOP 5 AVATARS (BY TWEETS)</div>
-          <template>
-            <v-simple-table>
-              <template v-slot:default>
-                <thead>
-                  <tr>
-                    <th class="text-left">REAL NAME</th>
-                    <th class="text-left">AVATAR NAME</th>
-                    <th class="text-left">NUMBER OF TWEETS</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="item in tops.tweets" :key="item.username">
-                    <td>{{ item.person }}</td>
-                    <td>{{ item.username }}</td>
-                    <td>{{ item.tweets.toLocaleString() }}</td>
-                  </tr>
-                </tbody>
-              </template>
-            </v-simple-table>
-          </template>
+          <v-card class="pa-3" v-if="tops.followers">
+            <v-card-title class="align-start"
+              >TOP 5 AVATARS (BY TWEETS)</v-card-title
+            >
+
+            <template>
+              <v-simple-table>
+                <template v-slot:default>
+                  <thead>
+                    <tr>
+                      <th class="text-left">REAL NAME</th>
+                      <th class="text-left">AVATAR NAME</th>
+                      <th class="text-left">NUMBER OF TWEETS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="item in tops.tweets" :key="item.username">
+                      <td>{{ item.person || "unassigned" }}</td>
+                      <td>{{ item.username }}</td>
+                      <td>{{ item.tweets.toLocaleString() }}</td>
+                    </tr>
+                  </tbody>
+                </template>
+              </v-simple-table>
+            </template>
+          </v-card>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col cols="12">
+          <v-card
+            class="pa-3"
+            v-if="Object.keys(topFiveAvatarsByTweets).length > 0"
+          >
+            <v-card-title class="headline"
+              >TOP 5 AVATARS BY TWEETS</v-card-title
+            >
+            <v-card-text>
+              <pie-chart :round="2" suffix="%" :data="topFiveAvatarsByTweets" />
+            </v-card-text>
+          </v-card>
         </v-col>
       </v-row>
     </v-container>
@@ -226,7 +246,7 @@ export default {
         };
       },
     },
-    topFiveAvatarByTweets: {
+    topFiveAvatarsByTweets: {
       type: Object,
       default: function () {
         return {
@@ -236,7 +256,7 @@ export default {
         };
       },
     },
-    topFiveAvatarByFollowers: {
+    topFiveAvatarsByFollowers: {
       type: Object,
       default: function () {
         return {
