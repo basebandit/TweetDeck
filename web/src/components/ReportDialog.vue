@@ -14,7 +14,7 @@
           <v-toolbar-title>Report</v-toolbar-title>
           <v-spacer></v-spacer>
           <v-toolbar-items>
-            <v-btn dark text @click="exportToPDF"> Save To PDF </v-btn>
+            <v-btn dark text @click="exportPDF"> Save To PDF </v-btn>
           </v-toolbar-items>
         </v-toolbar>
         <daily-pdf
@@ -24,11 +24,13 @@
           :totalFollowing="dailyReportStats.totalFollowing"
           :totalFollowers="dailyReportStats.totalFollowers"
           :totalTweets="dailyReportStats.totalTweets"
-          :topFiveAvatarByTweets="dailyReportStats.topFiveAvatarByTweets"
+          :topFiveAvatarsByTweets="dailyReportStats.topFiveAvatarsByTweets"
           :topFiveAvatarsByFollowing="
             dailyReportStats.topFiveAvatarsByFollowing
           "
-          :topFiveAvatarsByFollowers="dailyReportStats.topFiveAvatarByFollowers"
+          :topFiveAvatarsByFollowers="
+            dailyReportStats.topFiveAvatarsByFollowers
+          "
           :topFiveAvatarsByLikes="dailyReportStats.topFiveAvatarsByLikes"
           :tops="dailyReportStats.tops"
         />
@@ -39,10 +41,15 @@
 <script>
 import DailyPdf from "./DailyPdf";
 import html2pdf from "html2pdf.js";
+import print from "vue-print-nb";
 import { mapGetters } from "vuex";
+import printJS from "print-js";
 export default {
   name: "ReportDialog",
   components: { DailyPdf },
+  directives: {
+    print,
+  },
   // props: {
   //   date: {
   //     type: String,
@@ -70,16 +77,26 @@ export default {
     ...mapGetters("report", ["showDialog", "dailyReportStats"]),
   },
   methods: {
+    exportPDF() {
+      printJS({
+        printable: "document",
+        showModal: true,
+        scanStyles: true,
+        modalMessage: "Generating report...",
+        type: "html",
+        // targetStyles: ["*"],
+      });
+    },
     exportToPDF() {
       let options_ = {
         margin: 10,
-        filename: "myfile.pdf",
+        filename: "report.pdf",
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: {
           scale: 2,
           logging: true,
           dpi: 192,
-          letterRendering: true,
+          letterRendering: false,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       };
