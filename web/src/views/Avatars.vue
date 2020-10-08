@@ -647,14 +647,14 @@ export default {
       this.avatarsPerPage = number;
     },
     sortAscendingBy(prop) {
-      this.avatars = this.avatars.sort(function (a, b) {
+      this.avatars.sort(function (a, b) {
         var pa = prop in a ? a[prop] : 0; //check if a[prop] exists if not return 0
         var pb = prop in b ? b[prop] : 0;
         return pa < pb ? -1 : 1;
       });
     },
     sortDescendingBy(prop) {
-      this.avatars = this.avatars.sort(function (a, b) {
+      this.avatars.sort(function (a, b) {
         var pa = prop in a ? a[prop] : 0; //check if a[prop] exists if not return 0
         var pb = prop in b ? b[prop] : 0;
         return pa > pb ? -1 : 1;
