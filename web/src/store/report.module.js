@@ -10,8 +10,8 @@ export default{
   },
   actions:{
     showDialog({commit},payload){
-      const {dailyStats} = payload
-      commit("openDialog",{dailyStats})
+      const {dailyStats,router} = payload
+      commit("openDialog",{dailyStats,router})
     },
     hideDialog({commit}){
       commit("closeDialog")
@@ -19,7 +19,8 @@ export default{
   },
   mutations:{
     openDialog(state,payload){
-      const {dailyStats} = payload
+      const {dailyStats,router} = payload
+      router.push({name:"DailyReport"})
       state.dialog = true
       state.dailyReportStats = dailyStats
     } ,
