@@ -6,10 +6,24 @@ import Member from '@/views/Member.vue'
 import Auth from '@/components/Auth.vue'
 import Layout from '@/components/Layout.vue'
 import Login from '@/views/Login.vue'
+import Report from '@/components/Report.vue'
+import DailyReport from '@/views/DailyReport.vue'
 
 Vue.use(VueRouter)
 
   const routes = [
+    {
+      path: "/report",
+      name:"Report",
+      component: Report,
+      children:[
+        {
+          path:"daily",
+          name:"DailyReport",
+          component: DailyReport
+        }
+      ]
+    },
     {
       path: "/auth",
       name: "Auth",
