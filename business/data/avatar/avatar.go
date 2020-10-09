@@ -234,6 +234,22 @@ func GetTotalAccounts(ctx context.Context, db *sqlx.DB) (int, error) {
 	return total, nil
 }
 
+//GetNewAccounts return any new avatar records inserted between now and yesterday.
+func GetNewAccounts(ctx context.Context, db *sqlx.DB) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
+	defer span.End()
+
+	const q = `select count(*) as newAccounts from avatars where date(created_at) between current_date - interval '1 day' and current_date`
+
+	var count int
+	if err := db.GetContext(ctx, &count, q); err != nil {
+		return count, errors.Wrap(err, "selecting new avatars")
+	}
+
+	fmt.Println("Counts", count)
+	return count, nil
+}
+
 //Get retrieves the most recent Avatars from the database.
 // func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 // 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.get")
@@ -636,130 +652,6 @@ func GetAvatarCountByUserID(ctx context.Context, db *sqlx.DB, userID string) (in
 
 	return count, nil
 }
-
-// //GetThePastDays retrieves avatar profile records for the past given days inclusive of today's records.
-// func GetThePastDays(ctx context.Context, db *sqlx.DB, days int) ([]*Avatar, error) {
-// 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getbyuserid")
-// 	defer span.End()
-
-// 	var q = fmt.Sprintf("select p.id,a.username,p.tweets, p.followers, p.following, p.likes, date(p.created_at) as created_at from profiles p left join avatars a on p.avatar_id=a.id where date(p.created_at) > NOW()- interval '%d day' order by date(p.created_at) asc", days)
-
-// 	var avatars []*Avatar
-
-// 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
-// 		return nil, err
-// 	}
-
-// 	// var (
-// 	// 	tweets    int
-// 	// 	likes     int
-// 	// 	followers int
-// 	// 	following int
-// 	// )
-
-// 	// totals := make(map[time.Weekday]map[string]int)
-
-// 	for _, a := range avatars {
-// 		switch day := a.CreatedAt.Weekday(); day {
-// 		case time.Monday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Monday.String())
-// 			// if totals[time.Monday] == nil {
-// 			// 	totals[time.Monday] = make(map[string]int)
-// 			// 	totals[time.Monday]["tweets"] = tweets
-// 			// 	totals[time.Monday]["following"] = following
-// 			// 	totals[time.Monday]["follower"] = followers
-// 			// 	totals[time.Monday]["likes"] = likes
-// 			// }
-// 		case time.Tuesday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Tuesday.String())
-// 			// if totals[time.Tuesday] == nil {
-// 			// 	totals[time.Tuesday] = make(map[string]int)
-// 			// 	totals[time.Tuesday]["tweets"] = tweets
-// 			// 	totals[time.Tuesday]["following"] = following
-// 			// 	totals[time.Tuesday]["follower"] = followers
-// 			// 	totals[time.Tuesday]["likes"] = likes
-// 			// }
-// 		case time.Wednesday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Wednesday.String())
-// 			// if totals[time.Wednesday] == nil {
-// 			// 	totals[time.Wednesday] = make(map[string]int)
-// 			// 	totals[time.Wednesday]["tweets"] = tweets
-// 			// 	totals[time.Wednesday]["following"] = following
-// 			// 	totals[time.Wednesday]["follower"] = followers
-// 			// 	totals[time.Wednesday]["likes"] = likes
-// 			// }
-// 		case time.Thursday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Thursday.String())
-// 			// if totals[time.Thursday] == nil {
-// 			// 	totals[time.Thursday] = make(map[string]int)
-// 			// 	totals[time.Thursday]["tweets"] = tweets
-// 			// 	totals[time.Thursday]["following"] = following
-// 			// 	totals[time.Thursday]["follower"] = followers
-// 			// 	totals[time.Thursday]["likes"] = likes
-// 			// }
-// 		case time.Friday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Friday.String())
-// 			// if totals[time.Friday] == nil {
-// 			// 	totals[time.Friday] = make(map[string]int)
-// 			// 	totals[time.Friday]["tweets"] = tweets
-// 			// 	totals[time.Friday]["following"] = following
-// 			// 	totals[time.Friday]["follower"] = followers
-// 			// 	totals[time.Friday]["likes"] = likes
-// 			// }
-// 		case time.Saturday:
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Saturday.String())
-// 			// if totals[time.Saturday] == nil {
-// 			// 	totals[time.Saturday] = make(map[string]int)
-// 			// 	totals[time.Saturday]["tweets"] = tweets
-// 			// 	totals[time.Saturday]["following"] = following
-// 			// 	totals[time.Saturday]["follower"] = followers
-// 			// 	totals[time.Saturday]["likes"] = likes
-// 			// }
-// 		case time.Sunday:
-
-// 			// tweets += *a.Tweets
-// 			// following += *a.Following
-// 			// followers += *a.Followers
-// 			// likes += *a.Likes
-// 			a.Day = stringPointer(time.Sunday.String())
-// 			// if totals[time.Sunday] == nil {
-// 			// 	totals[time.Sunday] = make(map[string]int)
-// 			// 	totals[time.Sunday]["tweets"] = tweets
-// 			// 	totals[time.Sunday]["following"] = following
-// 			// 	totals[time.Sunday]["follower"] = followers
-// 			// 	totals[time.Sunday]["likes"] = likes
-// 			// }
-// 		}
-// 	}
-
-// 	// fmt.Printf("Totals %+v\n", totals)
-
-// 	return avatars, nil
-// }
 
 // intPointer is a helper to get a *int from a int. It is in the tests package
 // because we normally don't want to deal with pointers to basic types but it's
