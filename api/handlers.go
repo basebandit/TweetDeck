@@ -426,6 +426,13 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	newAccts, err := avatar.GetNewAccounts(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
 	var (
 		tweets    int
 		following int
@@ -455,17 +462,19 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 	}
 
 	totals := struct {
-		Avatars   int `json:"avatars"`
-		Tweets    int `json:"tweets"`
-		Likes     int `json:"likes"`
-		Followers int `json:"followers"`
-		Following int `json:"following"`
+		Avatars     int `json:"avatars"`
+		Tweets      int `json:"tweets"`
+		Likes       int `json:"likes"`
+		Followers   int `json:"followers"`
+		Following   int `json:"following"`
+		NewAccounts int `json:"newAccounts"`
 	}{
 		avatars,
 		tweets,
 		likes,
 		followers,
 		following,
+		newAccts,
 	}
 
 	render.Respond(w, r, totals)
