@@ -1,6 +1,5 @@
 <template>
   <div class="home">
-    <report-dialog> </report-dialog>
     <v-toolbar
       class="pt-3"
       extended
@@ -18,7 +17,7 @@
             color="primary"
             dark
             class="text-center"
-            @click.stop="openReportDialog"
+            @click.stop="showDailyReport"
           >
             <v-icon left>mdi-file-pdf</v-icon> Print Report
           </v-btn>
@@ -420,13 +419,9 @@
 </template>
 
 <script>
-import { jsPDF } from "jspdf";
-import ReportDialog from "@/components/ReportDialog";
-// import html2canvas from "html2canvas";
 import { mapGetters } from "vuex";
 export default {
   name: "Home",
-  components: { ReportDialog },
   data() {
     return {
       search: "",
@@ -551,16 +546,17 @@ export default {
     topFiveAvatarsByTweets() {
       const obj = {};
       if (this.tops.tweets) {
-        this.tops.tweets.forEach(
-          (avatar) =>
-            (obj[avatar.username] = (avatar.tweets / this.totals.tweets) * 100)
-        );
+        this.tops.tweets.forEach((avatar) => {
+          let p = (avatar.tweets / this.totals.tweets) * 100;
+          let key = `${avatar.username} (${p.toFixed()}%)`;
+          obj[key] = p;
+        });
       }
       return obj;
     },
   },
   methods: {
-    openReportDialog() {
+    showDailyReport() {
       let dailyStats = {
         date: this.today,
         activeAccts: this.accounts.active,
@@ -568,29 +564,17 @@ export default {
         totalFollowers: this.totals.followers,
         totalFollowing: this.totals.following,
         totalTweets: this.totals.tweets,
+        newAccounts: this.totals.newAccounts,
+        totalSuspendedAccounts: this.suspendedAvatars.length,
         topFiveAvatarsByFollowers: this.topFiveAvatarsByFollowers,
         topFiveAvatarsByFollowing: this.topFiveAvatarsByFollowing,
         topFiveAvatarsByLikes: this.topFiveAvatarsByLikes,
         topFiveAvatarsByTweets: this.topFiveAvatarsByTweets,
         tops: this.tops,
       };
-      this.$store.dispatch("report/showDialog", { dailyStats });
-    },
-    dailyReport() {
-      let doc = new jsPDF("p", "pt", "A4");
-      let margins = {
-        top: 80,
-        bottom: 60,
-        left: 40,
-        width: 822,
-      };
-
-      doc.html(document.getElementById("contentHTML"), {
-        callback: function (pdf) {
-          pdf.save("a4.pdf");
-        },
-        x: margins.left,
-        y: margins.top,
+      this.$store.dispatch("report/showDialog", {
+        dailyStats,
+        router: this.$router,
       });
     },
   },
