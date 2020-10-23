@@ -22,6 +22,8 @@ const (
 	// topFiveByTweets    = "/api/top/tweets"
 	topFives = "/api/totals/top"
 
+	lookup = "/api/lookup/twitter"
+
 	signup = "/api/signup"
 	login  = "/api/token"
 	ping   = "/api/ping"
@@ -55,6 +57,9 @@ func (s *Server) routes() {
 
 		//Top In Each category (followers,following,tweets)
 		r.Get(topFives, s.handleTopFives)
+
+		//Perform twitter lookup
+		r.Get(lookup, s.handleTwitterLookup)
 	})
 
 	//==============Unauthenticated Routes===============
@@ -62,5 +67,4 @@ func (s *Server) routes() {
 	s.router.Post(signup, s.handleSignup)
 	s.router.Get(ping, s.handlePing)
 	s.router.Get(login, s.handleToken)
-
 }
