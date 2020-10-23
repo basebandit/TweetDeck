@@ -48,7 +48,7 @@
         <div class="font-weight-bold">{{ totalLikes.toLocaleString() }}</div>
       </v-col>
     </v-row>
-    <v-row>
+    <!-- <v-row>
       <v-col class="text-center">
         <div class="text-decoration-underline">
           AVATAR WITH THE HIGHEST GAINED FOLLOWERS
@@ -59,16 +59,16 @@
           {{ highestGainedFollowers.person }}
         </div>
       </v-col>
-    </v-row>
+    </v-row> -->
     <v-row justify="center">
       <v-col align="left">
         <div class="text-decoration-underline">
           AVATAR WITH THE HIGHEST LIKES
         </div>
         <div class="font-weight-bold">
-          {{ highestLikes.avatar }}
-          {{ highestLikes.count.toLocaleString() }} -
-          {{ highestLikes.person }}
+          {{ highestLikes.username }} -
+          {{ highestLikes.likes.toLocaleString() }} -
+          {{ highestLikes.person || "unassigned" }}
         </div>
       </v-col>
       <v-col align="right">
