@@ -19,6 +19,7 @@
             :topFiveAvatarsByFollowers="
               dailyReportStats.topFiveAvatarsByFollowers
             "
+            :highestLikes="dailyReportStats.highestLikes"
             :topFiveAvatarsByLikes="dailyReportStats.topFiveAvatarsByLikes"
             :tops="dailyReportStats.tops"
           />
