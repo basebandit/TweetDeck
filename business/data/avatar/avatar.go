@@ -9,6 +9,7 @@ import (
 
 	"time"
 
+	"github.com/fatih/structs"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -201,7 +202,7 @@ func GetSuspendedAccounts(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getsuspendedaccounts")
 	defer span.End()
 
-	const q = `select followers,following,tweets,likes,profile_image_url, join_date,bio,a.username,(select concat(firstname,' ',lastname) as username from users where id=user_id) as person from avatars a left join profiles p on p.avatar_id=a.id and p.created_at=current_date where p.avatar_id is null`
+	const q = `select followers,following,tweets,likes,profile_image_url, join_date,bio,a.username,(select concat(firstname,' ',lastname) as username from users where id=user_id) as person from avatars a left join profiles p on p.avatar_id=a.id and p.created_at=(select max(created_at) from profiles) where p.avatar_id is null`
 
 	avatars := []*Avatar{}
 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
@@ -557,7 +558,7 @@ func GetTopFiveByFollowers(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) 
 		p.tweets,
 		p.likes,
 		p.bio,
-		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username) 
+		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=(select max(created_at) from profiles) group by p.id,a.user_id,a.username) 
 	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by followers desc limit 5`
 
 	var avatars []*Avatar
@@ -567,6 +568,73 @@ func GetTopFiveByFollowers(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) 
 	}
 
 	return avatars, nil
+}
+
+//GetHighestGainedBy returns the highest gained avatar by that field. It finds the biggest difference between records of the given difference in days.
+func GetHighestGainedBy(ctx context.Context, db *sqlx.DB, fieldname string, days int) (*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var today []*Avatar
+	var previous []*Avatar
+
+	const qt = `select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p."following", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles) order by p.created_at asc`
+
+	if err := db.SelectContext(ctx, &today, qt); err != nil {
+		return nil, err
+	}
+
+	var qp = fmt.Sprintf("select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.following, p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at= current_date - interval '%d day' order by p.created_at asc", days)
+
+	if err := db.SelectContext(ctx, &previous, qp); err != nil {
+		return nil, err
+	}
+
+	// var prev []
+
+	// for k, curr := range today {
+	// 	fmt.Println(k, previous[k].Username, curr.Username, *curr.Followers)
+	// }
+	// //find the maximum difference
+	// // var diff int
+	// fmt.Println(*today[10]["Followers"], *previous[10]."Followers")
+	var prev []map[string]interface{}
+	for _, v := range previous {
+		m := structs.Map(v)
+		prev = append(prev, m)
+	}
+
+	var curr []map[string]interface{}
+	for _, v := range today {
+		m := structs.Map(v)
+		curr = append(curr, m)
+	}
+
+	for _, current := range curr {
+		for k, v := range current {
+
+			if k == fieldname {
+				for _, previous := range prev {
+					if pf, ok := previous[k]; ok {
+						fmt.Println(*v.(*int), *pf.(*int))
+					}
+				}
+			}
+		}
+	}
+	// for i, m := range curr {
+	// 	for k, v := range m {
+	// 		if k == fieldname {
+	// 			if prevFollowers, ok := prev[i][k]; ok {
+	// 				if pf, ok := prevFollowers.(*int); ok {
+	// 					fmt.Println(*pf, *v.(*int))
+	// 				}
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	return nil, nil
 }
 
 //GetTopFiveByFollowing returns the top five avatars with highest following in descending order.
@@ -579,7 +647,7 @@ func GetTopFiveByFollowing(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) 
 		p.tweets,
 		p.likes,
 		p.bio,
-		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username) 
+		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=(select max(created_at) from profiles) group by p.id,a.user_id,a.username) 
 	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by following desc limit 5`
 
 	var avatars []*Avatar
@@ -601,7 +669,7 @@ func GetTopFiveByTweets(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 		p.tweets,
 		p.likes,
 		p.bio,
-		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username)
+		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=(select max(created_at) from profiles) group by p.id,a.user_id,a.username)
 	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by tweets desc limit 5`
 
 	var avatars []*Avatar
@@ -623,7 +691,7 @@ func GetTopFiveByLikes(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 		p.tweets,
 		p.likes,
 		p.bio,
-		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=current_date group by p.id,a.user_id,a.username)
+		p.created_at from profiles p left join avatars a on p.avatar_id = a.id where p.created_at=(select max(created_at) from profiles) group by p.id,a.user_id,a.username)
 	select allp.username,allp.followers,allp.following,allp.tweets,allp.likes,(select concat(firstname,' ',lastname) as username from users where id=allp.user_id) as person,allp.created_at from allp order by likes desc limit 5`
 
 	var avatars []*Avatar
