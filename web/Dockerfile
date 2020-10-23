@@ -1,10 +1,10 @@
 #build stage
 FROM node:12.2.0-alpine as build-stage
 WORKDIR /app
-COPY package*.json ./
-RUN npm install
+COPY package*.json /app/
+RUN npm install yarn -g
 COPY . .
-RUN npm run build
+RUN yarn install && yarn run build
 
 # production stage
 FROM nginx:1.13.12-alpine as production-stage
