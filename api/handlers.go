@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi"
+	"github.com/google/uuid"
 
 	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/business/data/avatar"
+	"ekraal.org/avatarlysis/business/data/profile"
+	service "ekraal.org/avatarlysis/foundation/service/twitter"
 
 	"go.opentelemetry.io/otel/api/global"
 
@@ -26,45 +30,6 @@ import (
 const (
 	secret = "9f33e0f0086e439ebb41190167c9c83f62db6da68cac8ee95506855788b4abe9"
 )
-
-// func (s *Server) handleSignup(w http.ResponseWriter, r *http.Request) {
-// 	signupRequest := struct {
-// 		Name     string `json:"name"`
-// 		Email    string `json:"email"`
-// 		Password string `json:"password"`
-// 	}{}
-
-// 	if err := json.NewDecoder(r.Body).Decode(&signupRequest); err != nil {
-// 		if len(signupRequest.Email) == 0 || len(signupRequest.Password) == 0 {
-// 			s.log.Printf("api: %v\n", errors.New("missing email of password field"))
-// 			render.Render(w, r, ErrInvalidRequest(errors.New("missing email of password field")))
-// 			return
-// 		}
-// 	}
-
-// 	userService := user.NewService(r.Context(), s.db)
-
-// 	_, err := userService.Insert(signupRequest.Name, signupRequest.Email, signupRequest.Password)
-// 	if err != nil {
-// 		var e mongo.WriteException
-// 		if errors.As(err, &e) {
-// 			//If it's aunique key violation
-// 			for _, we := range e.WriteErrors {
-// 				if we.Code == 11000 {
-// 					s.log.Printf("api: %v\n", err)
-// 					render.Render(w, r, ErrDuplicateField(ErrEmailTaken))
-// 					return
-// 				}
-// 			}
-// 		}
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
-
-// 	render.Status(r, http.StatusCreated)
-// 	render.Respond(w, r, http.NoBody)
-// }
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(r.Context(), "handlers.ping")
@@ -461,13 +426,25 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		avatars++ //total avatars
 	}
 
+	var mgByFollowers *avatar.Avatar
+
+	//TODO:
+	// mgByFollowers, err = avatar.GetHighestGainedBy(s.ctx, s.db, "Followers", 1)
+
+	// if err != nil {
+	// 	s.log.Printf("api: %v\n", err)
+	// 	render.Render(w, r, ErrInternalServerError)
+	// 	return
+	// }
+
 	totals := struct {
-		Avatars     int `json:"avatars"`
-		Tweets      int `json:"tweets"`
-		Likes       int `json:"likes"`
-		Followers   int `json:"followers"`
-		Following   int `json:"following"`
-		NewAccounts int `json:"newAccounts"`
+		Avatars               int            `json:"avatars"`
+		Tweets                int            `json:"tweets"`
+		Likes                 int            `json:"likes"`
+		Followers             int            `json:"followers"`
+		Following             int            `json:"following"`
+		NewAccounts           int            `json:"newAccounts"`
+		MostGainedByFollowers *avatar.Avatar `json:"mostGainedByFollowers"`
 	}{
 		avatars,
 		tweets,
@@ -475,6 +452,7 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		followers,
 		following,
 		newAccts,
+		mgByFollowers,
 	}
 
 	render.Respond(w, r, totals)
@@ -633,201 +611,26 @@ func (s *Server) handleUpdateMember(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, http.NoBody)
 }
 
-// func (s *Server) handleDailyStats(w http.ResponseWriter, r *http.Request) {
-// 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
-// 	defer span.End()
+func (s *Server) handleTwitterLookup(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
 
-// 	_, ok := ctx.Value(KeyValues).(*Values)
-// 	if !ok {
-// 		s.log.Println("web value missing from context")
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 
-// 	var days int
+	// log.Println(s.cfg.TwitterConsumerKey)
+	if err := s.TwitterLookup(); err != nil {
+		s.log.Println(errors.Wrap(err, "api: twitter lookup"))
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 
-// 	day := time.Now().Weekday()
-
-// 	switch day {
-// 	case time.Monday:
-// 		days = 1
-// 	case time.Tuesday:
-// 		days = 2
-// 	case time.Wednesday:
-// 		days = 3
-// 	case time.Thursday:
-// 		days = 4
-// 	case time.Friday:
-// 		days = 5
-// 	case time.Saturday:
-// 		days = 6
-// 	case time.Sunday:
-// 		days = 7
-// 	}
-
-// 	avs, err := avatar.GetThePastDays(s.ctx, s.db, days)
-// 	if err != nil {
-// 		s.log.Printf("api: %v\n", err)
-// 		render.Render(w, r, ErrInternalServerError)
-// 		return
-// 	}
-
-// 	// fmt.Printf("%+v\n", avs)
-// 	var (
-// 		tweets    int
-// 		likes     int
-// 		followers int
-// 		following int
-// 	)
-// 	result := make(map[string]map[string]int)
-// 	for _, av := range avs {
-// 		switch *av.Day {
-// 		case time.Wednesday.String():
-// 			tweets += *av.Tweets
-// 			following += *av.Following
-// 			followers += *av.Followers
-// 			likes += *av.Likes
-
-// 			if result[*av.Day] == nil {
-// 				result[*av.Day] = make(map[string]int)
-// 				result[*av.Day]["tweets"] = tweets
-// 				result[*av.Day]["following"] = following
-// 				result[*av.Day]["followers"] = followers
-// 				result[*av.Day]["likes"] = likes
-// 			}
-
-// 		case time.Thursday.String():
-// 			tweets += *av.Tweets
-// 			following += *av.Following
-// 			followers += *av.Followers
-// 			likes += *av.Likes
-// 			if result[*av.Day] == nil {
-// 				result[*av.Day] = make(map[string]int)
-// 				result[*av.Day]["tweets"] = tweets
-// 				result[*av.Day]["following"] = following
-// 				result[*av.Day]["followers"] = followers
-// 				result[*av.Day]["likes"] = likes
-// 			}
-
-// 		}
-// 	}
-
-// 	fmt.Printf("%+v\n", result)
-// 	// // total := struct {
-// 	// // 	Day       string `json:"day"`
-// 	// // 	Tweets    int    `json:"tweets"`
-// 	// // 	Following int    `json:"following"`
-// 	// // 	Followers int    `json:"followers"`
-// 	// // 	Likes     int    `json:"likes"`
-// 	// // }{}
-// 	// totals := make(map[string]map[string]int)
-// 	// // totals := []struct {
-// 	// // 	Day       string `json:"day"`
-// 	// // 	Tweets    int    `json:"tweets"`
-// 	// // 	Following int    `json:"following"`
-// 	// // 	Followers int    `json:"followers"`
-// 	// // 	Likes     int    `json:"likes"`
-// 	// // }{}
-
-// 	// for _, a := range avs {
-// 	// 	switch *a.Day {
-// 	// 	case time.Monday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Tuesday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Wednesday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Thursday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Friday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Saturday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	case time.Sunday.String():
-// 	// 		tweets += *a.Tweets
-// 	// 		following += *a.Following
-// 	// 		followers += *a.Followers
-// 	// 		likes += *a.Likes
-// 	// 		if totals[*a.Day] == nil {
-// 	// 			totals[*a.Day] = make(map[string]int)
-// 	// 			totals[*a.Day]["tweets"] = tweets
-// 	// 			totals[*a.Day]["following"] = following
-// 	// 			totals[*a.Day]["followers"] = followers
-// 	// 			totals[*a.Day]["likes"] = likes
-// 	// 		}
-// 	// 		// totals = append(totals, total)
-// 	// 	}
-// 	// }
-
-// 	render.Respond(w, r, avs)
-// }
+	render.Respond(w, r, http.NoBody)
+}
 
 func readFile(reader io.Reader) ([]string, error) {
 
@@ -857,7 +660,82 @@ func readFile(reader io.Reader) ([]string, error) {
 	return usernames, nil
 }
 
+//TwitterLookup perform twitter user lookup
+func (s *Server) TwitterLookup() error {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "api.twitterlookup")
+	defer span.End()
+
+	avatars, err := avatar.GetUsernames(s.ctx, s.db)
+	if err != nil {
+		return err
+	}
+
+	var usernames []string
+	dict := make(map[string]string)
+
+	if len(avatars) > 0 {
+		for _, avatar := range avatars {
+			usernames = append(usernames, avatar.Username)
+			dict[strings.ToLower(avatar.Username)] = avatar.ID
+		}
+
+		twitter := service.NewTwitter(s.cfg.TwitterConsumerKey, s.cfg.TwitterConsumerSecret, s.cfg.TwitterAccessToken, s.cfg.TwitterTokenURL)
+
+		chunks := chunkBy(usernames, 100)
+		var nps []profile.NewProfile
+		now := time.Now()
+		for _, chunk := range chunks {
+
+			tusers := twitter.Lookup(ctx, chunk)
+
+			for _, user := range tusers {
+				np := profile.NewProfile{}
+				np.ID = uuid.New().String()
+				np.CreatedAt = now
+				np.UpdatedAt = now
+				avatarID, ok := dict[strings.ToLower(user.ScreenName)] //We just being paranoid just incase
+				//because tusers only contains the usernames whose accounts actually exist in twitter which in any case
+				// they already exist in our database
+				if !ok {
+					continue //skip to the next iteration
+				}
+				np.AvatarID = stringPointer(avatarID)
+				np.Name = stringPointer(user.Name)
+				np.Followers = intPointer(user.FollowersCount)
+				np.Following = intPointer(user.FriendsCount)
+				np.Likes = intPointer(user.FavouritesCount)
+				np.Tweets = intPointer(user.StatusesCount)
+				np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
+				np.Bio = stringPointer(user.Description)
+				np.TwitterID = stringPointer(user.IDStr)
+				np.JoinDate = stringPointer(user.CreatedAt)
+				np.LastTweetTime = stringPointer(twitter.LastTweetTime(user.ID))
+				nps = append(nps, np)
+				// if err := profile.Create(s.ctx, s.db, &np, now); err != nil {
+				// 	fmt.Printf("profiler: %v\n", err)
+				// 	return err
+				// }
+			}
+		}
+		if err := profile.CreateMultiple(s.ctx, s.db, nps, now); err != nil {
+			fmt.Printf("profiler: %v\n", err)
+			return err
+		}
+	}
+	return nil
+}
+
 func stringPointer(s string) *string {
-	str := s
-	return &str
+	return &s
+}
+
+func intPointer(n int) *int {
+	return &n
+}
+
+func chunkBy(items []string, chunkSize int) (chunks [][]string) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
 }
