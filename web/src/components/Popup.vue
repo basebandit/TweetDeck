@@ -63,22 +63,25 @@ export default {
   methods: {
     upload() {
       let formData = new FormData();
-      if (this.file.type == "text/csv") {
-        formData.append("avatars", this.file);
+      /**eslint-disable */
+      console.log("file.type");
+      // if (this.file.type == "text/csv"){
+      formData.append("avatars", this.file);
 
-        this.$store.dispatch("avatars/upload", { token: this.token, formData });
-      } else {
-        /**eslint-disable */
-        console.error("non-csv file detected");
-        this.snackbarType = "error";
-        this.snackbarMessage = "Invalid file type";
-        this.snackbar = true;
-      }
+      this.$store.dispatch("avatars/upload", { token: this.token, formData });
+      // } else {
+      //   /**eslint-disable */
+      //   console.error("non-csv file detected");
+      //   this.snackbarType = "error";
+      //   this.snackbarMessage = "Invalid file type";
+      //   this.snackbar = true;
+      // }
       //Reset the snackbar after 2 seconds
       setTimeout(() => {
         this.snackbarType = "";
         this.snackbarMessage = "";
         this.snackbar = false;
+        this.dialog = false;
       }, 2000);
     },
     download() {
