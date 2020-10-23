@@ -12,7 +12,74 @@
         </v-col>
 
         <v-col align="right">
-          <v-btn
+          <v-menu
+            v-model="menu"
+            :close-on-content-click="false"
+            :nudge-width="200"
+            offset-x
+          >
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn color="grey" icon v-bind="attrs" v-on="on">
+                <v-icon>mdi-dots-vertical</v-icon>
+              </v-btn>
+            </template>
+
+            <v-list>
+              <v-list-item @click.stop="showDailyReport">
+                <v-list-item-icon>
+                  <v-icon>mdi-file-pdf</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>Daily Report</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click.stop="weeklyReportDialog = true">
+                <v-list-item-icon>
+                  <v-icon>mdi-file-pdf</v-icon>
+                </v-list-item-icon>
+                <v-list-item-title>Weekly Report</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-menu>
+          <v-dialog v-model="weeklyReportDialog" persistent max-width="900">
+            <v-card>
+              <v-card-title class="headline">
+                Choose the date range for weekly report
+              </v-card-title>
+              <v-card-text>
+                <v-row>
+                  <v-col cols="12" sm="6">
+                    <v-date-picker v-model="dates" range></v-date-picker>
+                  </v-col>
+                  <v-col cols="12" sm="6">
+                    <v-text-field
+                      v-model="dateRangeText"
+                      label="Date range"
+                      prepend-icon="mdi-calendar"
+                      readonly
+                    ></v-text-field>
+                    <!-- model: {{ dates }} -->
+                  </v-col>
+                </v-row>
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn
+                  color="green darken-1"
+                  text
+                  @click="weeklyReportDialog = false"
+                >
+                  Cancel
+                </v-btn>
+                <v-btn
+                  color="green darken-1"
+                  text
+                  @click="weeklyReportDialog = false"
+                >
+                  Ok
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-dialog>
+          <!-- <v-btn
             rounded
             color="primary"
             dark
@@ -20,7 +87,7 @@
             @click.stop="showDailyReport"
           >
             <v-icon left>mdi-file-pdf</v-icon> Print Report
-          </v-btn>
+          </v-btn> -->
         </v-col>
       </v-row>
     </v-toolbar>
@@ -424,8 +491,11 @@ export default {
   name: "Home",
   data() {
     return {
+      menu: false,
       search: "",
+      dates: [],
       today: new Date().toString(),
+      weeklyReportDialog: false,
       headers: [
         {
           text: "Avatar",
@@ -448,6 +518,9 @@ export default {
     ...mapGetters("people", ["team"]),
     ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
     ...mapGetters("stats", ["totals", "tops"]),
+    dateRangeText() {
+      return this.dates.join(" - ");
+    },
     token() {
       return window.localStorage.getItem("user");
     },
@@ -514,32 +587,33 @@ export default {
     topFiveAvatarsByFollowers() {
       const obj = {};
       if (this.tops.followers) {
-        this.tops.followers.forEach(
-          (avatar) =>
-            (obj[avatar.username] =
-              (avatar.followers / this.totals.followers) * 100)
-        );
+        this.tops.followers.forEach((avatar) => {
+          let p = (avatar.followers / this.totals.followers) * 100;
+          let key = `${avatar.username} (${p.toFixed()}%)`;
+          obj[key] = p;
+        });
       }
       return obj;
     },
     topFiveAvatarsByLikes() {
       const obj = {};
       if (this.tops.likes) {
-        this.tops.likes.forEach(
-          (avatar) =>
-            (obj[avatar.username] = (avatar.likes / this.totals.likes) * 100)
-        );
+        this.tops.likes.forEach((avatar) => {
+          let p = (avatar.likes / this.totals.likes) * 100;
+          let key = `${avatar.username} (${p.toFixed()}%)`;
+          obj[key] = p;
+        });
       }
       return obj;
     },
     topFiveAvatarsByFollowing() {
       const obj = {};
       if (this.tops.following) {
-        this.tops.following.forEach(
-          (avatar) =>
-            (obj[avatar.username] =
-              (avatar.following / this.totals.following) * 100)
-        );
+        this.tops.following.forEach((avatar) => {
+          let p = (avatar.following / this.totals.following) * 100;
+          let key = `${avatar.username} (${p.toFixed()}%)`;
+          obj[key] = p;
+        });
       }
       return obj;
     },
@@ -565,6 +639,7 @@ export default {
         totalFollowing: this.totals.following,
         totalTweets: this.totals.tweets,
         newAccounts: this.totals.newAccounts,
+        highestLikes: this.tops.likes[0],
         totalSuspendedAccounts: this.suspendedAvatars.length,
         topFiveAvatarsByFollowers: this.topFiveAvatarsByFollowers,
         topFiveAvatarsByFollowing: this.topFiveAvatarsByFollowing,
