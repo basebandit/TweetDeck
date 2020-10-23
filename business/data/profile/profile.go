@@ -21,7 +21,7 @@ var (
 )
 
 //Create adds a new Profile to the database.It returns the created profile.
-func Create(ctx context.Context, db *sqlx.DB, avatarID string, np *NewProfile, now time.Time) error {
+func Create(ctx context.Context, db *sqlx.DB, np *NewProfile, now time.Time) error {
 
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.create")
 	defer span.End()
@@ -44,6 +44,8 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.createmultiple")
 	defer span.End()
+
+	fmt.Println("Profiles to be inserted: ", len(np))
 
 	q := `INSERT INTO profiles(id,avatar_id,followers,"following",tweets,likes,bio,"name",twitter_id,profile_image_url,last_tweet_time,join_date,created_at,updated_at) VALUES `
 
