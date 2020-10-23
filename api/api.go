@@ -12,17 +12,27 @@ import (
 	"go.opentelemetry.io/otel/api/global"
 )
 
+//ApiConfig struct
+type ApiConfig struct {
+	TwitterConsumerKey    string
+	TwitterConsumerSecret string
+	TwitterAccessToken    string
+	TwitterAccessSecret   string
+	TwitterTokenURL       string
+}
+
 //Server is the api server.Our dependencies hang off this struct.
 type Server struct {
 	ctx    context.Context
 	db     *sqlx.DB
+	cfg    *ApiConfig
 	log    *log.Logger
 	router *chi.Mux
 	auth   *auth.Auth
 }
 
 //NewServer boostraps the api server and returns an initialized instance.
-func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, auth *auth.Auth, router *chi.Mux) *Server {
+func NewServer(ctx context.Context, db *sqlx.DB, cfg *ApiConfig, log *log.Logger, auth *auth.Auth, router *chi.Mux) *Server {
 	// Start or expand a distributed trace.
 	apiCtx, span := global.Tracer("service").Start(ctx, "api.server")
 	defer span.End()
@@ -38,6 +48,7 @@ func NewServer(ctx context.Context, db *sqlx.DB, log *log.Logger, auth *auth.Aut
 	s := Server{
 		ctx:    apiCtx,
 		db:     db,
+		cfg:    cfg,
 		log:    log,
 		router: router,
 		auth:   auth,
