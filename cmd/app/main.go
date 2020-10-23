@@ -10,24 +10,14 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
-	"strings"
-	"time"
 
-	service "ekraal.org/avatarlysis/foundation/service/twitter"
 	"github.com/robfig/cron/v3"
-	"go.opentelemetry.io/otel/api/global"
-
-	"ekraal.org/avatarlysis/business/data/avatar"
-	"ekraal.org/avatarlysis/business/data/profile"
 
 	"ekraal.org/avatarlysis/api"
 	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/foundation/database"
-	"github.com/dghubble/go-twitter/twitter"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
-	"github.com/google/uuid"
-	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
 )
 
@@ -96,7 +86,12 @@ func main() {
 
 	router := chi.NewRouter()
 
-	api := api.NewServer(ctx, db, logger, auth, router)
+	apiCfg := api.ApiConfig{
+		TwitterAccessSecret: cfg.TwitterAccessSecret, TwitterAccessToken: cfg.TwitterAccessToken, TwitterConsumerKey: cfg.TwitterConsumerKey, TwitterConsumerSecret: cfg.TwitterConsumerSecret,
+		TwitterTokenURL: cfg.TwitterTokenURL,
+	}
+
+	api := api.NewServer(ctx, db, &apiCfg, logger, auth, router)
 
 	srv := http.Server{
 		Addr:    ":8880",
@@ -106,7 +101,7 @@ func main() {
 	// pass in your specific zone name, using Kenya/Nairobi as example
 	c := cron.New()
 	c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
-		if err := twitterLookup(ctx, db, cfg, logger); err != nil {
+		if err := api.TwitterLookup(); err != nil {
 			logger.Println(err)
 		}
 	})
@@ -131,108 +126,110 @@ func main() {
 	log.Println("Avatarlysis API server stopped gracefully")
 }
 
-func chunk(users []string) [][]string {
-	var divided [][]string
-	numCPU := 10
-	chunkSize := (len(users) + numCPU - 1) / numCPU
+// func chunk(users []string) [][]string {
+// 	var divided [][]string
+// 	// numCPU := 10
+// 	chunkSize := 100
 
-	for i := 0; i < len(users); i += chunkSize {
-		end := i + chunkSize
+// 	for i := 0; i < len(users); i += chunkSize {
+// 		end := i + chunkSize
 
-		if end > len(users) {
-			end = len(users)
-		}
+// 		if end > len(users) {
+// 			end = len(users)
+// 		}
 
-		divided = append(divided, users[i:end])
-	}
-	return divided
-}
+// 		divided = append(divided, users[i:end])
+// 	}
+// 	return divided
+// }
 
-func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logger) error {
-	ctx, span := global.Tracer("avatarlysis").Start(ctx, "main.twitterlookup")
-	defer span.End()
+// func twitterLookup(ctx context.Context, db *sqlx.DB, cfg *Config, log *log.Logger) error {
+// 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "main.twitterlookup")
+// 	defer span.End()
 
-	avs, err := avatar.GetUsernames(ctx, db)
-	if err != nil {
-		return err
-	}
+// 	avs, err := avatar.GetUsernames(ctx, db)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	dict := map[string]string{}
-	for _, av := range avs {
-		dict[av.Username] = av.ID
-	}
+// 	dict := map[string]string{}
+// 	for _, av := range avs {
+// 		dict[av.Username] = av.ID
+// 	}
 
-	twitter := service.NewTwitter(cfg.TwitterConsumerKey, cfg.TwitterConsumerSecret, cfg.TwitterAccessToken, cfg.TwitterTokenURL)
+// 	twitter := service.NewTwitter(cfg.TwitterConsumerKey, cfg.TwitterConsumerSecret, cfg.TwitterAccessToken, cfg.TwitterTokenURL)
 
-	var unames []string
+// 	var unames []string
 
-	for _, av := range avs {
-		unames = append(unames, av.Username)
-	}
+// 	for _, av := range avs {
+// 		unames = append(unames, av.Username)
+// 	}
 
-	// fmt.Printf("%+v\n", unames)
-	//Lets implement our queueing here
-	chunks := chunk(unames)
+// 	// fmt.Printf("%+v\n", unames)
+// 	//Lets implement our queueing here
+// 	chunks := chunk(unames)
 
-	for _, chunk := range chunks {
+// 	var count int
+// 	for _, chunk := range chunks {
+// 		fmt.Println("Chunk", len(chunk))
+// 		users, err := twitter.Lookup(ctx, log, chunk)
+// 		if err != nil {
+// 			return err
+// 		}
 
-		users, err := twitter.Lookup(ctx, log, chunk)
-		if err != nil {
-			return err
-		}
+// 		if err := profiler(ctx, twitter, dict, users, db); err != nil {
+// 			return err
+// 		}
 
-		if err := profiler(ctx, twitter, dict, users, db); err != nil {
-			return err
-		}
+// 		count++
+// 	}
 
-	}
+// 	return nil
+// }
 
-	return nil
-}
+// func profiler(ctx context.Context, twitter *service.TwitterService, dict map[string]string, users []twitter.User, db *sqlx.DB) error {
+// 	var np profile.NewProfile
+// 	var nps []profile.NewProfile
+// 	now := time.Now()
+// 	for _, user := range users {
 
-func profiler(ctx context.Context, twitter *service.TwitterService, dict map[string]string, users []twitter.User, db *sqlx.DB) error {
-	var np profile.NewProfile
-	var nps []profile.NewProfile
-	now := time.Now()
-	for _, user := range users {
+// 		np.ID = uuid.New().String()
+// 		np.CreatedAt = now
+// 		np.UpdatedAt = now
+// 		avatarID, ok := dict[user.ScreenName]
+// 		if !ok {
+// 			//lets skip to the next iteration
+// 			continue
+// 		}
+// 		np.AvatarID = stringPointer(avatarID)
+// 		np.Name = stringPointer(user.Name)
+// 		np.Followers = intPointer(user.FollowersCount)
+// 		np.Following = intPointer(user.FriendsCount)
+// 		np.Likes = intPointer(user.FavouritesCount)
+// 		np.Tweets = intPointer(user.StatusesCount)
 
-		np.ID = uuid.New().String()
-		np.CreatedAt = now
-		np.UpdatedAt = now
-		avatarID, ok := dict[user.ScreenName]
-		if !ok {
-			//lets skip to the next iteration
-			continue
-		}
-		np.AvatarID = stringPointer(avatarID)
-		np.Name = stringPointer(user.Name)
-		np.Followers = intPointer(user.FollowersCount)
-		np.Following = intPointer(user.FriendsCount)
-		np.Likes = intPointer(user.FavouritesCount)
-		np.Tweets = intPointer(user.StatusesCount)
+// 		np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
+// 		np.Bio = stringPointer(user.Description)
+// 		np.TwitterID = stringPointer(user.IDStr)
+// 		np.JoinDate = stringPointer(user.CreatedAt)
+// 		ltt, err := twitter.UserTimeline(user.ID)
+// 		if err != nil {
+// 			log.Println(err)
+// 			continue
+// 		}
+// 		if len(ltt) > 0 {
+// 			np.LastTweetTime = stringPointer(ltt[0].CreatedAt)
+// 		}
 
-		np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
-		np.Bio = stringPointer(user.Description)
-		np.TwitterID = stringPointer(user.IDStr)
-		np.JoinDate = stringPointer(user.CreatedAt)
-		ltt, err := twitter.UserTimeline(user.ID)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if len(ltt) > 0 {
-			np.LastTweetTime = stringPointer(ltt[0].CreatedAt)
-		}
+// 		nps = append(nps, np)
+// 	}
 
-		nps = append(nps, np)
-	}
+// 	if err := profile.CreateMultiple(ctx, db, nps, time.Now()); err != nil {
+// 		return err
+// 	}
 
-	if err := profile.CreateMultiple(ctx, db, nps, time.Now()); err != nil {
-		return err
-	}
-
-	return nil
-}
+// 	return nil
+// }
 
 func stringPointer(val string) *string {
 	str := val
