@@ -237,6 +237,33 @@ func (s *Server) handleAvatars(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, a)
 }
 
+func (s *Server) handleTotalDailyTweets(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.totalavatars")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	total, err := avatar.GetDailyTotalBy(ctx, s.db, "tweets")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	t := struct {
+		Count int `json:"count"`
+	}{
+		Count: total,
+	}
+
+	render.Respond(w, r, t)
+}
+
 func (s *Server) handleTotalAvatars(w http.ResponseWriter, r *http.Request) {
 	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.totalavatars")
 	defer span.End()
@@ -391,6 +418,34 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	tweets, err := avatar.GetDailyTotalBy(ctx, s.db, "tweets")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	followers, err := avatar.GetDailyTotalBy(ctx, s.db, "followers")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	likes, err := avatar.GetDailyTotalBy(ctx, s.db, "likes")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	following, err := avatar.GetDailyTotalBy(ctx, s.db, "following")
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
 	newAccts, err := avatar.GetNewAccounts(ctx, s.db)
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
@@ -398,35 +453,35 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var (
-		tweets    int
-		following int
-		followers int
-		avatars   int
-		likes     int
-	)
+	// var (
+	// 	tweets    int
+	// 	following int
+	// 	followers int
+	// 	avatars   int
+	// 	likes     int
+	// )
 
-	for _, av := range avs {
-		if av.Tweets != nil {
-			tweets += *av.Tweets //total tweets
-		}
+	// for _, av := range avs {
+	// 	if av.Tweets != nil {
+	// 		tweets += *av.Tweets //total tweets
+	// 	}
 
-		if av.Following != nil {
-			following += *av.Following //total following
-		}
+	// 	if av.Following != nil {
+	// 		following += *av.Following //total following
+	// 	}
 
-		if av.Followers != nil {
-			followers += *av.Followers //total followers
-		}
+	// 	if av.Followers != nil {
+	// 		followers += *av.Followers //total followers
+	// 	}
 
-		if av.Likes != nil {
-			likes += *av.Likes //total likes
-		}
+	// 	if av.Likes != nil {
+	// 		likes += *av.Likes //total likes
+	// 	}
 
-		avatars++ //total avatars
-	}
+	// 	avatars++ //total avatars
+	// }
 
-	var mgByFollowers *avatar.Avatar
+	// var mgByFollowers *avatar.Avatar
 
 	//TODO:
 	// mgByFollowers, err = avatar.GetHighestGainedBy(s.ctx, s.db, "Followers", 1)
@@ -438,21 +493,19 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 	// }
 
 	totals := struct {
-		Avatars               int            `json:"avatars"`
-		Tweets                int            `json:"tweets"`
-		Likes                 int            `json:"likes"`
-		Followers             int            `json:"followers"`
-		Following             int            `json:"following"`
-		NewAccounts           int            `json:"newAccounts"`
-		MostGainedByFollowers *avatar.Avatar `json:"mostGainedByFollowers"`
+		Avatars     int `json:"avatars"`
+		Tweets      int `json:"tweets"`
+		Likes       int `json:"likes"`
+		Followers   int `json:"followers"`
+		Following   int `json:"following"`
+		NewAccounts int `json:"newAccounts"`
 	}{
-		avatars,
+		len(avs),
 		tweets,
 		likes,
 		followers,
 		following,
 		newAccts,
-		mgByFollowers,
 	}
 
 	render.Respond(w, r, totals)
@@ -490,28 +543,28 @@ func (s *Server) handleTopFives(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	following, err := avatar.GetTopFiveByFollowing(s.ctx, s.db)
+	following, err := avatar.GetTopFiveDailyBy(s.ctx, s.db, "following")
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
 
-	followers, err := avatar.GetTopFiveByFollowers(s.ctx, s.db)
+	followers, err := avatar.GetTopFiveDailyBy(s.ctx, s.db, "followers")
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
 
-	tweets, err := avatar.GetTopFiveByTweets(s.ctx, s.db)
+	tweets, err := avatar.GetTopFiveDailyBy(s.ctx, s.db, "tweets")
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
 
-	likes, err := avatar.GetTopFiveByLikes(s.ctx, s.db)
+	likes, err := avatar.GetTopFiveDailyBy(s.ctx, s.db, "likes")
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
@@ -628,6 +681,62 @@ func (s *Server) handleTwitterLookup(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
+
+	render.Respond(w, r, http.NoBody)
+}
+
+func (s *Server) handleGetProfileInitialCreateAt(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.handlegetprofielinitialCreateat")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	initialDate, err := profile.GetInitialDate(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	res := struct {
+		StartDate string `json:"startDate"`
+	}{
+		StartDate: initialDate.Format("2006-1-02"),
+	}
+
+	render.Respond(w, r, res)
+}
+
+func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
+	ctx, span := global.Tracer("avatarlysis").Start(s.ctx, "handlers.people")
+	defer span.End()
+
+	_, ok := ctx.Value(KeyValues).(*Values)
+	if !ok {
+		s.log.Println("web value missing from context")
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	var start, end string
+
+	//Get the query params
+	//http://localhost:8880/api/totals/weekly?start=""&end=""
+	if r.URL.Query().Get("start") == "" || r.URL.Query().Get("end") == "" {
+		s.log.Println("invalid request.missing query parameter(s)")
+		render.Render(w, r, ErrInvalidRequest(errors.New("invalid request.missing query parameter(s)")))
+		return
+	}
+
+	start = r.URL.Query().Get("start")
+	end = r.URL.Query().Get("end")
+
+	fmt.Println("start: ", start, "end: ", end)
 
 	render.Respond(w, r, http.NoBody)
 }
