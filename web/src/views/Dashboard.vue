@@ -519,7 +519,7 @@ export default {
     ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
     ...mapGetters("stats", ["totals", "tops"]),
     dateRangeText() {
-      return this.dates.join(" - ");
+      return this.dates.join(" to ");
     },
     token() {
       return window.localStorage.getItem("user");
@@ -581,7 +581,7 @@ export default {
           icon: "mdi-account-arrow-right",
           name: "following",
         },
-        { total: this.totals.followers, icon: "mdi-thumb-up", name: "likes" },
+        { total: this.totals.likes, icon: "mdi-thumb-up", name: "likes" },
       ];
     },
     topFiveAvatarsByFollowers() {
@@ -630,6 +630,9 @@ export default {
     },
   },
   methods: {
+    prepareWeeklyReport() {
+      //Lets send the date range for the weekly report here
+    },
     showDailyReport() {
       let dailyStats = {
         date: this.today,
