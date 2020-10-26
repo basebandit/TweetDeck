@@ -47,7 +47,12 @@
               <v-card-text>
                 <v-row>
                   <v-col cols="12" sm="6">
-                    <v-date-picker v-model="dates" range></v-date-picker>
+                    <v-date-picker
+                      v-model="dates"
+                      :min="minDate"
+                      :max="maxDateRange"
+                      range
+                    ></v-date-picker>
                   </v-col>
                   <v-col cols="12" sm="6">
                     <v-text-field
@@ -56,7 +61,9 @@
                       prepend-icon="mdi-calendar"
                       readonly
                     ></v-text-field>
-                    <!-- model: {{ dates }} -->
+                    <span v-if="dateRangeError != ''">{{
+                      dateRangeError
+                    }}</span>
                   </v-col>
                 </v-row>
               </v-card-text>
@@ -72,7 +79,7 @@
                 <v-btn
                   color="green darken-1"
                   text
-                  @click="weeklyReportDialog = false"
+                  @click="prepareWeeklyReport()"
                 >
                   Ok
                 </v-btn>
@@ -496,6 +503,7 @@ export default {
       dates: [],
       today: new Date().toString(),
       weeklyReportDialog: false,
+      dateRangeError: "",
       headers: [
         {
           text: "Avatar",
@@ -513,13 +521,27 @@ export default {
     this.$store.dispatch("stats/getTops", { token: this.token });
     this.$store.dispatch("avatars/getAvatars", { token: this.token });
     this.$store.dispatch("avatars/getSuspendedAvatars", { token: this.token });
+    this.$store.dispatch("report/getMinDate", { token: this.token });
   },
   computed: {
     ...mapGetters("people", ["team"]),
     ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
     ...mapGetters("stats", ["totals", "tops"]),
+    ...mapGetters("report", ["minDate"]),
     dateRangeText() {
       return this.dates.join(" to ");
+    },
+
+    maxDateRange() {
+      var d = new Date(),
+        month = "" + (d.getMonth() + 1),
+        day = "" + d.getDate(),
+        year = d.getFullYear();
+
+      if (month.length < 2) month = "0" + month;
+      if (day.length < 2) day = "0" + day;
+
+      return [year, month, day].join("-");
     },
     token() {
       return window.localStorage.getItem("user");
@@ -632,6 +654,22 @@ export default {
   methods: {
     prepareWeeklyReport() {
       //Lets send the date range for the weekly report here
+      /**eslint-disable */
+      console.log(this.dates);
+      if (this.dates.length > 0) {
+        if (new Date(this.dates[0]) < new Date(this.dates[1])) {
+          this.weeklyReportDialog = false;
+          this.$store.dispatch("stats/getWeeklyStats", {
+            token: this.token,
+            start: this.dates[0],
+            end: this.dates[1],
+          });
+        } else {
+          /**eslint-disable */
+          console.error("Start Date is greater than End Date");
+          this.dateRangeError = "Start Date cannot be  greater than End Date";
+        }
+      }
     },
     showDailyReport() {
       let dailyStats = {
