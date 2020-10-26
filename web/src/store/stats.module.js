@@ -5,6 +5,7 @@ export default{
   state:{
     totals:{},
     tops:{},
+    weeklyStats:{},
     fetchTotals:false,
     fetchTops: false,
   },
@@ -13,6 +14,7 @@ export default{
     tops:(state) => state.tops,
     fetching:(state) => state.fetchTotals,
     fetchingTops:(state) => state.fetchTops,
+    weeklyStats:(state) => state.weeklyStats,
   },
   actions:{
     getTotals({commit},payload){
@@ -43,6 +45,18 @@ export default{
         commit("topsFetchFailure",{
           message:err.response.data.error
         })
+      })
+    },
+    getWeeklyStats({commit},payload){
+      const {token,start,end} = payload
+      StatsService.getWeeklyStats(token,start,end).then(response => {
+        if (response.status === 200){
+          commit("weeklyStatsSuccess",{
+            stats: response.data
+          })
+        }
+      }).catch(err => {
+        commit("weeklyStatsFailure",{message:err.response.data.error})
       })
     }
   },
@@ -75,6 +89,15 @@ topsFetchFailure(state,payload){
   /**eslint-disable */
   console.error("TOPS_FETCH_FAILURE",message)
 },
+weeklyStatsSuccess(state,payload){
+  const {stats} = payload
+  state.weeklyStats = stats
+},
+weeklyStatsFailure(payload){
+  const {message} = payload
+  /**esint-disable */
+  console.log("WEEKLY_STATS",message)
+}
 },
 
 }
