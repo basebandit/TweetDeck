@@ -1,12 +1,16 @@
+import DateService from "../services/DateService";
+
 export default{
   namespaced: true,
   state:{
   dialog: false,
   dailyReportStats:{},
+  minDate:'',
   },
   getters:{
     showDialog:(state) => state.dialog,
     dailyReportStats:(state)=> state.dailyReportStats,
+    minDate:(state) => state.minDate,
   },
   actions:{
     showDialog({commit},payload){
@@ -15,6 +19,20 @@ export default{
     },
     hideDialog({commit}){
       commit("closeDialog")
+    },
+    getMinDate({commit},payload){
+      const {token} = payload
+      DateService.getMinDate(token).then(response =>{
+        if (response.status === 200){
+          commit("minDateSuccess",{
+            minDate:response.data,
+          })
+        }
+      }).catch(err =>{
+        commit("minDateFailure",{
+          message:err.response.data.error
+        })
+      })
     }
   },
   mutations:{
@@ -26,6 +44,15 @@ export default{
     } ,
     closeDialog(state){
       state.dialog = false
+    },
+    minDateSuccess(state,payload){
+   const {minDate} = payload
+   state.minDate = minDate.startDate
+    },
+    minDateFailure(payload){
+const {message} = payload
+/**eslint-disable */
+console.log("MIN_DATE_FAILURE",message)
     }
   }
 };
