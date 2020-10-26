@@ -131,3 +131,22 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 	}
 	return nil
 }
+
+//GetInitialDate gets the date the first profile was created
+func GetInitialDate(ctx context.Context, db *sqlx.DB) (time.Time, error) {
+
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.createmultiple")
+	defer span.End()
+
+	const q = `select min(created_at) as created_at from profiles`
+
+	profile := struct {
+		CreatedAt time.Time `db:"created_at"`
+	}{}
+
+	if err := db.GetContext(ctx, &profile, q); err != nil {
+		return time.Time{}, errors.Wrap(err, "retrieving the first profile creation date")
+	}
+
+	return profile.CreatedAt, nil
+}
