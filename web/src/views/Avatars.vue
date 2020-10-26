@@ -80,11 +80,7 @@
                       @click="assignDialog = false"
                       >Close</v-btn
                     >
-                    <v-btn
-                      color="blue darken-1"
-                      text
-                      :loading="assigning"
-                      @click="assignAvatar"
+                    <v-btn color="blue darken-1" text @click="assignAvatar"
                       >Assign</v-btn
                     >
                   </v-card-actions>
@@ -105,7 +101,6 @@
                     v-on="on"
                     v-bind="attrs"
                     slot="activator"
-                    :loading="assigning"
                   >
                     <v-icon small left>mdi-account-multiple-plus</v-icon
                     >Reassign
@@ -263,7 +258,7 @@
                   :color="props.isSelected(item) ? 'secondary' : ''"
                   class="ma-4"
                   align="center"
-                  :disabled="isAssigning"
+                  :disabled="assigning"
                   @click.stop="reassign(props, item)"
                   v-if="item.assigned === 1"
                 >
@@ -448,6 +443,8 @@ export default {
       // chosen: "",
       // selectedAvatarsIDs: [],
       // selectedItems: [],
+      isAssigning: false,
+      isReassigning: false,
       assignDialog: false,
       reassignDialog: false,
       assignCard: false,
@@ -465,18 +462,18 @@ export default {
   computed: {
     ...mapGetters("avatars", ["avatars", "fetching", "assigning"]),
     ...mapGetters("people", ["team"]),
-    isAssigning() {
-      if (this.selected.length > 0 && this.assignCard) {
-        return true;
-      }
-      return false;
-    },
-    reassigning() {
-      if (this.selected.length > 0 && this.reassignCard) {
-        return true;
-      }
-      return false;
-    },
+    // isAssigning() {
+    //   if (this.selected.length > 0 && this.assignCard) {
+    //     return true;
+    //   }
+    //   return false;
+    // },
+    // reassigning() {
+    //   if (this.selected.length > 0 && this.reassignCard) {
+    //     return true;
+    //   }
+    //   return false;
+    // },
     token() {
       return window.localStorage.getItem("user");
     },
@@ -494,12 +491,22 @@ export default {
       let selectedIDs = [];
       if (this.selected.length > 0) {
         this.selected.forEach((avatar) => {
-          /**eslint-disable */
-          console.log("AVATAR_ID", avatar.id);
           selectedIDs.push(avatar.id);
         });
       }
       return selectedIDs;
+    },
+    assigning() {
+      if (this.selected.length > 0 && this.isAssigning) {
+        return true;
+      }
+      return false;
+    },
+    reassigning() {
+      if (this.selected.length > 0 && this.isReassigning) {
+        return true;
+      }
+      return false;
     },
     members() {
       const names = [];
@@ -573,32 +580,20 @@ export default {
     },
     assign(props, item) {
       props.select(item, !props.isSelected(item));
-      if (props.isSelected(item) && this.selected.length > 0) {
-        this.assignCard = true;
+      if (props.isSelected(item)) {
+        this.isAssigning = true;
       } else {
-        this.assignCard = false;
+        this.isAssigning = false;
       }
     },
     reassign(props, item) {
       props.select(item, !props.isSelected(item));
-      if (props.isSelected(item) && this.selected.length > 0) {
-        this.reassignCard = true;
+      if (props.isSelected(item)) {
+        this.isReassigning = true;
       } else {
-        this.reassignCard = false;
+        this.isReassigning = false;
       }
     },
-    // once(fn, context) {
-    //   let result;
-
-    //   return function () {
-    //     if (fn) {
-    //       result = fn.apply(context || this, arguments);
-    //       fn = null;
-    //     }
-
-    //     return result;
-    //   };
-    // },
     assignAvatar() {
       this.team.forEach((member) => {
         let name = member.firstname + " " + member.lastname;
