@@ -66,8 +66,9 @@
           AVATAR WITH THE HIGHEST LIKES
         </div>
         <div class="font-weight-bold">
-          {{ highestLikes.username }} -
-          {{ highestLikes.likes.toLocaleString() }} -
+          @{{ highestLikes.username }} ({{
+            highestLikes.likes.toLocaleString()
+          }}) -
           {{ highestLikes.person || "unassigned" }}
         </div>
       </v-col>
