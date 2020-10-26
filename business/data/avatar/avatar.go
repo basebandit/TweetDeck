@@ -9,7 +9,6 @@ import (
 
 	"time"
 
-	"github.com/fatih/structs"
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/pkg/errors"
@@ -345,7 +344,7 @@ func Get(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) {
 		allp.profile_image_url,
 		allp.join_date,
 		allp.likes,
-		allp.bio from allp where priority_number = 1 and allp.created_at=current_date;`
+		allp.bio from allp where priority_number = 1 and allp.created_at=(select max(allp.created_at) from allp);`
 
 	avatars := []*Avatar{}
 	if err := db.SelectContext(ctx, &avatars, q); err != nil {
@@ -570,71 +569,114 @@ func GetTopFiveByFollowers(ctx context.Context, db *sqlx.DB) ([]*Avatar, error) 
 	return avatars, nil
 }
 
-//GetHighestGainedBy returns the highest gained avatar by that field. It finds the biggest difference between records of the given difference in days.
-func GetHighestGainedBy(ctx context.Context, db *sqlx.DB, fieldname string, days int) (*Avatar, error) {
+//GetDailyTotalBy returns the total of the given fieldname for a day. It gets the tweets for the greatest/max created_at and for the
+//previous day and finds the difference between the two and sums the difference ignoring negative outcomes.Sums only the positive
+//difference.
+func GetDailyTotalBy(ctx context.Context, db *sqlx.DB, fieldname string) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getDailyTotalTweets")
+	defer span.End()
+
+	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles)) as profiles),yest as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles) - interval '1 day') as profiles) select tod.username,tod.person,tod.%s - yest.%s as %s from yest inner join tod on yest.username=tod.username", fieldname, fieldname, fieldname)
+
+	var avatars []*Avatar
+	var total int
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return total, err
+	}
+
+	for _, avatar := range avatars {
+		switch fieldname {
+		case "tweets":
+			//check if it is nil and if not add the to the total sum
+			if avatar.Tweets != nil && *avatar.Tweets < 0 { //if its a negative value we skip it
+				continue
+			}
+
+			if avatar.Tweets != nil {
+				total += *avatar.Tweets
+			}
+		case "following":
+			if avatar.Following != nil && *avatar.Following < 0 { //if its a negative value we skip it
+				continue
+			}
+			//check if it is nil and if not add the to the total sum
+			if avatar.Following != nil {
+				total += *avatar.Following
+			}
+		case "followers":
+			if avatar.Followers != nil && *avatar.Followers < 0 { //if its a negative value we skip it
+				continue
+			}
+			//check if it is nil and if not add the to the total sum
+			if avatar.Followers != nil {
+				total += *avatar.Followers
+			}
+		case "likes":
+			if avatar.Likes != nil && *avatar.Likes < 0 { //if its a negative value we skip it
+				continue
+			}
+			//check if it is nil and if not add the to the total sum
+			if avatar.Likes != nil {
+				total += *avatar.Likes
+			}
+		}
+
+	}
+
+	return total, nil
+}
+
+//GetHighestGainedBy returns the highest gained avatar by that field. It finds the biggest difference between records of the two
+//given dates i.e startOfWeek and endOfWeek.
+func GetHighestGainedBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek time.Time) ([]*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
 	defer span.End()
 
-	var today []*Avatar
-	var previous []*Avatar
+	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date(%s)) as profiles),yest as (select * from (select p.id,a.username(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date(%s)) as profiles) select tod.username,tod.person,tod.followers - yest.followers as gain from yest inner join tod on yest.username=tod.username order by gain desc limit 5", endWeek, startWeek)
 
-	const qt = `select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p."following", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles) order by p.created_at asc`
+	var avatars []*Avatar
 
-	if err := db.SelectContext(ctx, &today, qt); err != nil {
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
 		return nil, err
 	}
 
-	var qp = fmt.Sprintf("select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.following, p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at= current_date - interval '%d day' order by p.created_at asc", days)
+	return avatars, nil
+}
 
-	if err := db.SelectContext(ctx, &previous, qp); err != nil {
+//GetTopFiveDailyBy gets the top 5 avatars with highest count in the given category. It gets the total for the given fieldname
+//with the latest date in the database and subtracts the highest for the same given category for the previous day and orders the
+//difference in descending order limiting it to the first 5 records.
+func GetTopFiveDailyBy(ctx context.Context, db *sqlx.DB, fieldname string) ([]*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getTopFiveDailyBy")
+	defer span.End()
+
+	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles)) as profiles),yest as (select * from(select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=(select max(created_at) from profiles) - interval '1 day') as profiles) select tod.username,tod.person,tod.%s - yest.%s as %s from yest inner join tod on yest.username=tod.username order by %s desc limit 5", fieldname, fieldname, fieldname, fieldname)
+
+	var avatars []*Avatar
+
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
 		return nil, err
 	}
 
-	// var prev []
+	return avatars, nil
 
-	// for k, curr := range today {
-	// 	fmt.Println(k, previous[k].Username, curr.Username, *curr.Followers)
-	// }
-	// //find the maximum difference
-	// // var diff int
-	// fmt.Println(*today[10]["Followers"], *previous[10]."Followers")
-	var prev []map[string]interface{}
-	for _, v := range previous {
-		m := structs.Map(v)
-		prev = append(prev, m)
+}
+
+//GetTopFiveWeeklyBy returns the top 5 avatars by the given fieldname i.e followers,following,tweets,likes
+//over the given time duration between startWeek and endWeek
+func GetTopFiveWeeklyBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek time.Time) ([]*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with allp as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at BETWEEN date(%s) AND date(%s)) as profiles) select username,person,sum(distinct %s) as t_followers from allp group by username,person order by t_followers desc	limit 5", startWeek, endWeek, fieldname)
+
+	var avatars []*Avatar
+
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, err
 	}
 
-	var curr []map[string]interface{}
-	for _, v := range today {
-		m := structs.Map(v)
-		curr = append(curr, m)
-	}
-
-	for _, current := range curr {
-		for k, v := range current {
-
-			if k == fieldname {
-				for _, previous := range prev {
-					if pf, ok := previous[k]; ok {
-						fmt.Println(*v.(*int), *pf.(*int))
-					}
-				}
-			}
-		}
-	}
-	// for i, m := range curr {
-	// 	for k, v := range m {
-	// 		if k == fieldname {
-	// 			if prevFollowers, ok := prev[i][k]; ok {
-	// 				if pf, ok := prevFollowers.(*int); ok {
-	// 					fmt.Println(*pf, *v.(*int))
-	// 				}
-	// 			}
-	// 		}
-	// 	}
-	// }
-
-	return nil, nil
+	return avatars, nil
 }
 
 //GetTopFiveByFollowing returns the top five avatars with highest following in descending order.
