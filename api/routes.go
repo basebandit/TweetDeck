@@ -16,11 +16,14 @@ const (
 	totals       = "/api/totals"
 	totalAvatars = "/api/totals/avatars"
 
-	dailyStats = "/api/totals/daily"
+	dailyStats  = "/api/totals/daily"
+	weeklyStats = "/api/totals/weekly"
 
+	initialCreatedAt = "/api/totals/weekly/mindate"
 	// topFiveByFollowers = "/api/top/followers"
 	// topFiveByTweets    = "/api/top/tweets"
-	topFives = "/api/totals/top"
+	topFives         = "/api/totals/top"
+	totalDailyTweets = "/api/totals/daily/tweets"
 
 	lookup = "/api/lookup/twitter"
 
@@ -53,6 +56,7 @@ func (s *Server) routes() {
 
 		//Totals
 		r.Get(totals, s.handleTotals)
+		r.Get(weeklyStats, s.handleWeeklyStats)
 		r.Get(totalAvatars, s.handleTotalAvatars)
 
 		//Top In Each category (followers,following,tweets)
@@ -60,6 +64,10 @@ func (s *Server) routes() {
 
 		//Perform twitter lookup
 		r.Get(lookup, s.handleTwitterLookup)
+		r.Get(totalDailyTweets, s.handleTotalDailyTweets)
+
+		//retrieve inital date (used to limit the date picker for weekly reports).To be used as the minimum limit
+		r.Get(initialCreatedAt, s.handleGetProfileInitialCreateAt)
 	})
 
 	//==============Unauthenticated Routes===============
