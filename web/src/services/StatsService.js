@@ -7,6 +7,9 @@ export default{
   getTops(token){
     return Api(token).get('/api/totals/top')
   },
+  getWeeklyStats(token,start,end){
+    return Api(token).get(`/api/totals/weekly?start=${start}&end=${end}`)
+  }
   // getTopByTweets(token){
   //   return Api(token).get('/api/top/tweets')
   // },
