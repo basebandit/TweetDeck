@@ -150,3 +150,22 @@ func GetInitialDate(ctx context.Context, db *sqlx.DB) (time.Time, error) {
 
 	return profile.CreatedAt, nil
 }
+
+//GetMostRecentCreateDate gets the date the latest profile was created
+func GetMostRecentCreateDate(ctx context.Context, db *sqlx.DB) (time.Time, error) {
+
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.createmultiple")
+	defer span.End()
+
+	const q = `select max(created_at) as created_at from profiles`
+
+	profile := struct {
+		CreatedAt time.Time `db:"created_at"`
+	}{}
+
+	if err := db.GetContext(ctx, &profile, q); err != nil {
+		return time.Time{}, errors.Wrap(err, "retrieving the most recent profile creation date")
+	}
+
+	return profile.CreatedAt, nil
+}
