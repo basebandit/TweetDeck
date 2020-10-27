@@ -1,7 +1,7 @@
 import Api from "@/services/Api"
 
 export default {
- getMinDate(token){
+ getDateRange(token){
   return Api(token).get('/api/totals/weekly/mindate')
  }
 }

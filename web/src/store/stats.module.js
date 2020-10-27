@@ -48,11 +48,11 @@ export default{
       })
     },
     getWeeklyStats({commit},payload){
-      const {token,start,end} = payload
+      const {token,start,end,router} = payload
       StatsService.getWeeklyStats(token,start,end).then(response => {
         if (response.status === 200){
           commit("weeklyStatsSuccess",{
-            stats: response.data
+            stats: response.data,router
           })
         }
       }).catch(err => {
@@ -90,8 +90,9 @@ topsFetchFailure(state,payload){
   console.error("TOPS_FETCH_FAILURE",message)
 },
 weeklyStatsSuccess(state,payload){
-  const {stats} = payload
+  const {stats,router} = payload
   state.weeklyStats = stats
+  router.push({name:"WeeklyReport"})
 },
 weeklyStatsFailure(payload){
   const {message} = payload

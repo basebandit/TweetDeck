@@ -6,11 +6,17 @@ export default{
   dialog: false,
   dailyReportStats:{},
   minDate:'',
+  maxDate:'',
+  startDate:'',
+  endDate:''
   },
   getters:{
     showDialog:(state) => state.dialog,
     dailyReportStats:(state)=> state.dailyReportStats,
     minDate:(state) => state.minDate,
+    maxDate:(state) => state.maxDate,
+    weeklyStartDate:(state) => state.startDate,
+    weeklyEndDate:(state)=> state.endDate
   },
   actions:{
     showDialog({commit},payload){
@@ -20,16 +26,20 @@ export default{
     hideDialog({commit}){
       commit("closeDialog")
     },
-    getMinDate({commit},payload){
+    weeklyReportDateRange({commit},payload){
+       const {startDate,endDate} = payload
+       commit("setWeeklyReportDate",{startDate,endDate})
+    },
+    getDateRange({commit},payload){
       const {token} = payload
-      DateService.getMinDate(token).then(response =>{
+      DateService.getDateRange(token).then(response =>{
         if (response.status === 200){
-          commit("minDateSuccess",{
-            minDate:response.data,
+          commit("dateRangeSuccess",{
+            range:response.data,
           })
         }
       }).catch(err =>{
-        commit("minDateFailure",{
+        commit("dateRangeFailure",{
           message:err.response.data.error
         })
       })
@@ -45,11 +55,17 @@ export default{
     closeDialog(state){
       state.dialog = false
     },
-    minDateSuccess(state,payload){
-   const {minDate} = payload
-   state.minDate = minDate.startDate
+    setWeeklyReportDate(state,payload){
+      const{startDate,endDate} = payload
+      state.startDate= startDate
+      state.endDate=endDate
     },
-    minDateFailure(payload){
+    dateRangeSuccess(state,payload){
+   const {range} = payload
+   state.minDate = range.startDate
+   state.maxDate = range.endDate
+    },
+    dateRangeFailure(payload){
 const {message} = payload
 /**eslint-disable */
 console.log("MIN_DATE_FAILURE",message)

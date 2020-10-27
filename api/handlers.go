@@ -745,9 +745,153 @@ func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
 	start = r.URL.Query().Get("start")
 	end = r.URL.Query().Get("end")
 
+	followers, err := avatar.GetWeeklyTotalBy(ctx, s.db, "followers", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	following, err := avatar.GetWeeklyTotalBy(ctx, s.db, "\"following\"", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	likes, err := avatar.GetWeeklyTotalBy(ctx, s.db, "likes", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	tweets, err := avatar.GetWeeklyTotalBy(ctx, s.db, "tweets", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	gainedLikes, err := avatar.GetHighestGainedBy(ctx, s.db, "likes", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	gainedFollowing, err := avatar.GetHighestGainedBy(ctx, s.db, "\"following\"", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	gainedFollowers, err := avatar.GetHighestGainedBy(ctx, s.db, "followers", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
 	fmt.Println("start: ", start, "end: ", end)
 
-	render.Respond(w, r, http.NoBody)
+	topLikes, err := avatar.GetTopFiveWeeklyBy(ctx, s.db, "likes", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	topTweets, err := avatar.GetTopFiveWeeklyBy(ctx, s.db, "tweets", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	topFollowing, err := avatar.GetTopFiveWeeklyBy(ctx, s.db, "\"following\"", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	topFollowers, err := avatar.GetTopFiveWeeklyBy(ctx, s.db, "followers", start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	suspendedAcctsCount, err := avatar.GetWeeklySuspendedAccountsCount(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	suspendedAccts, err := avatar.GetWeeklySuspendedAccounts(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	newAccts, err := avatar.GetWeeklyNewAccts(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	activeAccts, err := avatar.GetTotalWeeklyActiveAccounts(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	type Tops struct {
+		Likes     []*avatar.Avatar `json:"likes"`
+		Tweets    []*avatar.Avatar `json:"tweets"`
+		Following []*avatar.Avatar `json:"following"`
+		Followers []*avatar.Avatar `json:"followers"`
+	}
+
+	weeklyStats := struct {
+		Followers                int            `json:"followers"`
+		Following                int            `json:"following"`
+		Tweets                   int            `json:"tweets"`
+		Likes                    int            `json:"likes"`
+		HighestGainedByLikes     *avatar.Avatar `json:"highestGainedByLikes"`
+		HighestGainedByFollowers *avatar.Avatar `json:"highestGainedByFollowers"`
+		HighestGainedByFollowing *avatar.Avatar `json:"highestGainedByFollowing"`
+		Tops                     `json:"tops"`
+		TotalSuspendedAccounts   int              `json:"totalSuspendedAccounts"`
+		SuspendedAcconts         []*avatar.Avatar `json:"suspendedAccounts"`
+		NewAccounts              int              `json:"newAccts"`
+		ActiveAccounts           int              `json:"activeAccts"`
+	}{
+		Followers:                followers,
+		Following:                following,
+		Likes:                    likes,
+		Tweets:                   tweets,
+		SuspendedAcconts:         suspendedAccts,
+		NewAccounts:              newAccts,
+		ActiveAccounts:           activeAccts,
+		HighestGainedByLikes:     gainedLikes,
+		HighestGainedByFollowing: gainedFollowing,
+		HighestGainedByFollowers: gainedFollowers,
+		Tops: Tops{
+			Likes:     topLikes,
+			Followers: topFollowers,
+			Following: topFollowing,
+			Tweets:    topTweets,
+		},
+		TotalSuspendedAccounts: suspendedAcctsCount,
+	}
+
+	render.Respond(w, r, weeklyStats)
 }
 
 func readFile(reader io.Reader) ([]string, error) {

@@ -8,6 +8,7 @@ import Layout from '@/components/Layout.vue'
 import Login from '@/views/Login.vue'
 import Report from '@/components/Report.vue'
 import DailyReport from '@/views/DailyReport.vue'
+import WeeklyReport from '@/views/WeeklyReport.vue'
 
 Vue.use(VueRouter)
 
@@ -21,6 +22,11 @@ Vue.use(VueRouter)
           path:"daily",
           name:"DailyReport",
           component: DailyReport
+        },
+        {
+          path:"weekly",
+          name:"WeeklyReport",
+          component: WeeklyReport
         }
       ]
     },

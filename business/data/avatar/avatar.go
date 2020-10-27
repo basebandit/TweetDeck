@@ -626,21 +626,37 @@ func GetDailyTotalBy(ctx context.Context, db *sqlx.DB, fieldname string) (int, e
 	return total, nil
 }
 
+//GetWeeklyTotalBy returns the total of the given fieldname for a day. It gets the difference between records for the two
+//given dates i.e. startDate and endDate.Sums only the positive difference.
+func GetWeeklyTotalBy(ctx context.Context, db *sqlx.DB, fieldname, startDate, endDate string) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.getDailyTotalTweets")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.following, p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles),fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.following, p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles),totals as(select fin.username,sum(fin.%s - beg.%s) as %s from beg inner join fin on fin.username=beg.username group by fin.username order by %s desc) select sum(case when %s > 0 then %s end) %s from totals", startDate, endDate, fieldname, fieldname, fieldname, fieldname, fieldname, fieldname, fieldname)
+
+	var total int
+	if err := db.GetContext(ctx, &total, q); err != nil {
+		return total, err
+	}
+
+	return total, nil
+}
+
 //GetHighestGainedBy returns the highest gained avatar by that field. It finds the biggest difference between records of the two
 //given dates i.e startOfWeek and endOfWeek.
-func GetHighestGainedBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek time.Time) ([]*Avatar, error) {
+func GetHighestGainedBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek string) (*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
 	defer span.End()
 
-	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date(%s)) as profiles),yest as (select * from (select p.id,a.username(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date(%s)) as profiles) select tod.username,tod.person,tod.followers - yest.followers as gain from yest inner join tod on yest.username=tod.username order by gain desc limit 5", endWeek, startWeek)
+	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles),yest as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select tod.username,tod.person,tod.%s - yest.%s as %s from yest inner join tod on yest.username=tod.username order by %s desc limit 1", endWeek, startWeek, fieldname, fieldname, fieldname, fieldname)
 
-	var avatars []*Avatar
+	var avatar Avatar
 
-	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+	if err := db.GetContext(ctx, &avatar, q); err != nil {
 		return nil, err
 	}
 
-	return avatars, nil
+	return &avatar, nil
 }
 
 //GetTopFiveDailyBy gets the top 5 avatars with highest count in the given category. It gets the total for the given fieldname
@@ -664,11 +680,11 @@ func GetTopFiveDailyBy(ctx context.Context, db *sqlx.DB, fieldname string) ([]*A
 
 //GetTopFiveWeeklyBy returns the top 5 avatars by the given fieldname i.e followers,following,tweets,likes
 //over the given time duration between startWeek and endWeek
-func GetTopFiveWeeklyBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek time.Time) ([]*Avatar, error) {
+func GetTopFiveWeeklyBy(ctx context.Context, db *sqlx.DB, fieldname string, startWeek, endWeek string) ([]*Avatar, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
 	defer span.End()
 
-	var q = fmt.Sprintf("with allp as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at BETWEEN date(%s) AND date(%s)) as profiles) select username,person,sum(distinct %s) as t_followers from allp group by username,person order by t_followers desc	limit 5", startWeek, endWeek, fieldname)
+	var q = fmt.Sprintf("with tod as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at	from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles),yest as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select tod.username,tod.person,tod.%s - yest.%s as %s from yest inner join tod on tod.username=yest.username order by %s desc limit 5", endWeek, startWeek, fieldname, fieldname, fieldname, fieldname)
 
 	var avatars []*Avatar
 
@@ -677,6 +693,72 @@ func GetTopFiveWeeklyBy(ctx context.Context, db *sqlx.DB, fieldname string, star
 	}
 
 	return avatars, nil
+}
+
+//GetWeeklySuspendedAccountsCount get the total number of accounts suspended between the two given dates
+func GetWeeklySuspendedAccountsCount(ctx context.Context, db *sqlx.DB, startDate, endDate string) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select count(beg.username) from beg where username not in (select fin.username from fin)", startDate, endDate)
+
+	var count int
+
+	if err := db.GetContext(ctx, &count, q); err != nil {
+		return count, err
+	}
+
+	return count, nil
+
+}
+
+//GetWeeklySuspendedAccounts get all suspended accounts during the duration between the two given dates
+func GetWeeklySuspendedAccounts(ctx context.Context, db *sqlx.DB, startDate, endDate string) ([]*Avatar, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select * from beg where username not in (select fin.username from fin)", startDate, endDate)
+
+	var avatars []*Avatar
+
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, err
+	}
+
+	return avatars, nil
+}
+
+//GetWeeklyNewAccts get all new accounts added to the database between the during the two given dates
+func GetWeeklyNewAccts(ctx context.Context, db *sqlx.DB, startDate, endDate string) (int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("select count(*) from avatars where date(created_at) between date('%s') and date('%s')", startDate, endDate)
+
+	var count int
+
+	if err := db.GetContext(ctx, &count, q); err != nil {
+		return count, err
+	}
+
+	return count, nil
+}
+
+//GetTotalWeeklyActiveAccounts get all active accounts between the two given dates
+func GetTotalWeeklyActiveAccounts(ctx context.Context, db *sqlx.DB, startDate, endDate string) (int, error) {
+
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select count(beg.username) from beg where username in (select fin.username from fin)", startDate, endDate)
+
+	var count int
+
+	if err := db.GetContext(ctx, &count, q); err != nil {
+		return count, err
+	}
+
+	return count, nil
 }
 
 //GetTopFiveByFollowing returns the top five avatars with highest following in descending order.

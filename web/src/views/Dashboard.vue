@@ -50,7 +50,7 @@
                     <v-date-picker
                       v-model="dates"
                       :min="minDate"
-                      :max="maxDateRange"
+                      :max="maxDate"
                       range
                     ></v-date-picker>
                   </v-col>
@@ -521,28 +521,17 @@ export default {
     this.$store.dispatch("stats/getTops", { token: this.token });
     this.$store.dispatch("avatars/getAvatars", { token: this.token });
     this.$store.dispatch("avatars/getSuspendedAvatars", { token: this.token });
-    this.$store.dispatch("report/getMinDate", { token: this.token });
+    this.$store.dispatch("report/getDateRange", { token: this.token });
   },
   computed: {
     ...mapGetters("people", ["team"]),
     ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
     ...mapGetters("stats", ["totals", "tops"]),
-    ...mapGetters("report", ["minDate"]),
+    ...mapGetters("report", ["minDate", "maxDate"]),
     dateRangeText() {
       return this.dates.join(" to ");
     },
 
-    maxDateRange() {
-      var d = new Date(),
-        month = "" + (d.getMonth() + 1),
-        day = "" + d.getDate(),
-        year = d.getFullYear();
-
-      if (month.length < 2) month = "0" + month;
-      if (day.length < 2) day = "0" + day;
-
-      return [year, month, day].join("-");
-    },
     token() {
       return window.localStorage.getItem("user");
     },
@@ -659,10 +648,17 @@ export default {
       if (this.dates.length > 0) {
         if (new Date(this.dates[0]) < new Date(this.dates[1])) {
           this.weeklyReportDialog = false;
+          //Set the start and end dates for display in the report pdf
+          this.$store.dispatch("report/weeklyReportDateRange", {
+            startDate: this.dates[0],
+            endDate: this.dates[1],
+          });
+
           this.$store.dispatch("stats/getWeeklyStats", {
             token: this.token,
             start: this.dates[0],
             end: this.dates[1],
+            router: this.$router,
           });
         } else {
           /**eslint-disable */
