@@ -703,10 +703,19 @@ func (s *Server) handleGetProfileInitialCreateAt(w http.ResponseWriter, r *http.
 		return
 	}
 
+	endDate, err := profile.GetMostRecentCreateDate(ctx, s.db)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
 	res := struct {
 		StartDate string `json:"startDate"`
+		EndDate   string `json:"endDate"`
 	}{
 		StartDate: initialDate.Format("2006-1-02"),
+		EndDate:   endDate.Format("2006-1-02"),
 	}
 
 	render.Respond(w, r, res)
