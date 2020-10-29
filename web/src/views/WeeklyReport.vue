@@ -21,6 +21,9 @@
             :topFiveWeeklyAvatarsByLikes="topFiveAvatarsByLikes"
             :topFiveWeeklyAvatarsByTweets="topFiveAvatarsByTweets"
             :suspendedAccounts="weeklyStats.suspendedAccounts"
+            :totalUnusedAccounts="weeklyStats.totalUnusedAccounts"
+            :unusedAccounts="weeklyStats.unusedAccounts"
+            :inactiveAccts="weeklyStats.inactiveAccts"
           />
         </v-card>
       </v-row>
