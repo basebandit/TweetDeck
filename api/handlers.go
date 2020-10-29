@@ -793,7 +793,6 @@ func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
-	fmt.Println("start: ", start, "end: ", end)
 
 	topLikes, err := avatar.GetTopFiveWeeklyBy(ctx, s.db, "likes", start, end)
 	if err != nil {
@@ -851,6 +850,20 @@ func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	inactiveAccts, inactiveAcctsCount, err := avatar.GetWeeklyInactiveAccounts(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
+	unusedAccts, unusedAcctsCount, err := avatar.GetWeeklyUnusedAccounts(ctx, s.db, start, end)
+	if err != nil {
+		s.log.Printf("api: %v\n", err)
+		render.Render(w, r, ErrInternalServerError)
+		return
+	}
+
 	type Tops struct {
 		Likes     []*avatar.Avatar `json:"likes"`
 		Tweets    []*avatar.Avatar `json:"tweets"`
@@ -871,12 +884,20 @@ func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
 		SuspendedAcconts         []*avatar.Avatar `json:"suspendedAccounts"`
 		NewAccounts              int              `json:"newAccts"`
 		ActiveAccounts           int              `json:"activeAccts"`
+		InactiveAccounts         []*avatar.Avatar `json:"inactiveAccts"`
+		TotalInactiveAccounts    int              `json:"totalInactiveAccounts"`
+		UnusedAccounts           []*avatar.Avatar `json:"unusedAccounts"`
+		TotalUnusedAccounts      int              `json:"totalUnusedAccounts"`
 	}{
 		Followers:                followers,
 		Following:                following,
 		Likes:                    likes,
 		Tweets:                   tweets,
 		SuspendedAcconts:         suspendedAccts,
+		InactiveAccounts:         inactiveAccts,
+		TotalInactiveAccounts:    inactiveAcctsCount,
+		UnusedAccounts:           unusedAccts,
+		TotalUnusedAccounts:      unusedAcctsCount,
 		NewAccounts:              newAccts,
 		ActiveAccounts:           activeAccts,
 		HighestGainedByLikes:     gainedLikes,
