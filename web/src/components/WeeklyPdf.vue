@@ -87,6 +87,16 @@
         </div>
       </v-col>
     </v-row>
+
+    <v-row>
+      <v-col class="text-center">
+        <div class="text-decoration-underline">TOTAL UNUSED ACCOUNTS</div>
+        <div class="font-weight-bold">
+          {{ totalUnusedAccounts.toLocaleString() }}
+        </div>
+      </v-col>
+    </v-row>
+
     <v-row class="my-3">
       <v-col>
         <v-card flat class="pa-3" v-if="tops.tweets">
@@ -126,7 +136,10 @@
         <v-card
           flat
           class="pa-3"
-          v-if="Object.keys(topFiveWeeklyAvatarsByTweets).length > 0"
+          v-if="
+            topFiveWeeklyAvatarsByTweets &&
+            Object.keys(topFiveWeeklyAvatarsByTweets).length > 0
+          "
         >
           <v-card-title class="headline"
             >TOP 5 WEEKLY AVATARS (BY TWEETS)</v-card-title
@@ -180,7 +193,10 @@
         <v-card
           flat
           class="pa-3"
-          v-if="Object.keys(topFiveWeeklyAvatarsByFollowers).length > 0"
+          v-if="
+            topFiveWeeklyAvatarsByFollowers &&
+            Object.keys(topFiveWeeklyAvatarsByFollowers).length > 0
+          "
         >
           <v-card-title class="headline"
             >TOP 5 WEEKLY AVATARS (BY FOLLOWERS)
@@ -197,7 +213,11 @@
     </v-row>
     <v-row class="my-3">
       <v-col>
-        <v-card flat class="pa-3" v-if="suspendedAccounts.length > 0">
+        <v-card
+          flat
+          class="pa-3"
+          v-if="suspendedAccounts && suspendedAccounts.length > 0"
+        >
           <v-card-title class="align-start">SUSPENDED ACCOUNTS</v-card-title>
 
           <template>
@@ -214,6 +234,86 @@
                 <tbody>
                   <tr
                     v-for="(item, index) in suspendedAccounts"
+                    :key="item.username"
+                  >
+                    <td class="text-center">{{ index + 1 }}</td>
+                    <td class="text-center">
+                      {{ item.person || "unassigned" }}
+                    </td>
+                    <td class="text-center">@{{ item.username }}</td>
+                    <!-- <td class="text-center">
+                      {{ item.followers.toLocaleString() }}
+                    </td> -->
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+          </template>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-row class="my-3">
+      <v-col>
+        <v-card flat class="pa-3" v-if="inactiveAccts.length > 0">
+          <v-card-title class="align-start"
+            >INACTIVE ACCOUNTS (BY WEEKLY TWEETS)</v-card-title
+          >
+
+          <template>
+            <v-simple-table>
+              <template v-slot:default>
+                <thead>
+                  <tr>
+                    <th class="text-center">#</th>
+                    <th class="text-center">REAL NAME</th>
+                    <th class="text-center">AVATAR NAME</th>
+                    <!-- <th class="text-center">NUMBER OF FOLLOWERS</th> -->
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in inactiveAccts"
+                    :key="item.username"
+                  >
+                    <td class="text-center">{{ index + 1 }}</td>
+                    <td class="text-center">
+                      {{ item.person || "unassigned" }}
+                    </td>
+                    <td class="text-center">@{{ item.username }}</td>
+                    <!-- <td class="text-center">
+                      {{ item.followers.toLocaleString() }}
+                    </td> -->
+                  </tr>
+                </tbody>
+              </template>
+            </v-simple-table>
+          </template>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-row class="my-3">
+      <v-col>
+        <v-card flat class="pa-3" v-if="unusedAccounts.length > 0">
+          <v-card-title class="align-start"
+            >UNUSED ACCOUNTS (BY WEEKLY TWEETS)</v-card-title
+          >
+
+          <template>
+            <v-simple-table>
+              <template v-slot:default>
+                <thead>
+                  <tr>
+                    <th class="text-center">#</th>
+                    <th class="text-center">REAL NAME</th>
+                    <th class="text-center">AVATAR NAME</th>
+                    <!-- <th class="text-center">NUMBER OF FOLLOWERS</th> -->
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr
+                    v-for="(item, index) in unusedAccounts"
                     :key="item.username"
                   >
                     <td class="text-center">{{ index + 1 }}</td>
@@ -379,6 +479,74 @@ export default {
       },
     },
     suspendedAccounts: {
+      type: Array,
+      default: function () {
+        return [
+          {
+            username: "KairituK",
+            person: "Unassigned",
+            tweets: 4395,
+          },
+          {
+            username: "ni_witu",
+            person: "Unassigned",
+            tweets: 3404,
+          },
+          {
+            username: "h_nyinyi",
+            tweets: 3158,
+            person: "Unassigned",
+          },
+          {
+            username: "MwasikaRomelu",
+            person: "Unassigned",
+            tweets: 3058,
+          },
+          {
+            username: "NaisulaB",
+            person: "Unassigned",
+            tweets: 2983,
+          },
+        ];
+      },
+    },
+    unusedAccounts: {
+      type: Array,
+      default: function () {
+        return [
+          {
+            username: "KairituK",
+            person: "Unassigned",
+            tweets: 4395,
+          },
+          {
+            username: "ni_witu",
+            person: "Unassigned",
+            tweets: 3404,
+          },
+          {
+            username: "h_nyinyi",
+            tweets: 3158,
+            person: "Unassigned",
+          },
+          {
+            username: "MwasikaRomelu",
+            person: "Unassigned",
+            tweets: 3058,
+          },
+          {
+            username: "NaisulaB",
+            person: "Unassigned",
+            tweets: 2983,
+          },
+        ];
+      },
+    },
+    totalUnusedAccounts: {
+      type: Number,
+      default: 0,
+    },
+    inactiveAccts: {
       type: Array,
       default: function () {
         return [
