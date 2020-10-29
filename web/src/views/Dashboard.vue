@@ -11,7 +11,22 @@
           <span class="headline grey--text">Dashboard</span>
         </v-col>
 
-        <v-col align="right">
+        <div align="right">
+          <v-tooltip top>
+            <template v-slot:activator="{ on, attrs }">
+              <v-btn
+                fab
+                text
+                @click="fetchFromTwitter"
+                v-on="on"
+                v-bind="attrs"
+                slot="activator"
+              >
+                <v-icon small> mdi-cloud-download </v-icon>
+              </v-btn>
+            </template>
+            <span>Refresh from twitter</span>
+          </v-tooltip>
           <v-menu
             v-model="menu"
             :close-on-content-click="false"
@@ -86,20 +101,37 @@
               </v-card-actions>
             </v-card>
           </v-dialog>
-          <!-- <v-btn
-            rounded
-            color="primary"
-            dark
-            class="text-center"
-            @click.stop="showDailyReport"
-          >
-            <v-icon left>mdi-file-pdf</v-icon> Print Report
-          </v-btn> -->
-        </v-col>
+        </div>
       </v-row>
     </v-toolbar>
     <v-container class="my-3">
       <div ref="contentHTML" id="contentHTML">
+        <!-- <v-alert
+          v-model="alert"
+          close-text="Close Alert"
+          dark
+          icon="mdi-vuetify"
+          border="left"
+          dismisible
+        >
+          Praesent congue erat at massa. Nullam vel sem. Aliquam lorem ante,
+          dapibus in, viverra quis, feugiat a, tellus. Proin viverra, ligula sit
+          amet ultrices semper, ligula arcu tristique sapien, a accumsan nisi
+          mauris ac eros. Curabitur at lacus ac velit ornare lobortis.
+        </v-alert> -->
+        <v-alert
+          v-model="alert"
+          border="left"
+          close-text="Close Alert"
+          type="warning"
+          :loading="fetchingFromTwitter"
+          dark
+          dismissible
+        >
+          This is a long running task and will take time approximately not less
+          than 12 minutes. You might as well keep yourself busy while we crank
+          the data for you.Come back later to check results
+        </v-alert>
         <v-row class="my-5">
           <v-col justify="space-around">
             <v-card class="pa-2">
@@ -499,6 +531,7 @@ export default {
   data() {
     return {
       menu: false,
+      alert: false,
       search: "",
       dates: [],
       today: new Date().toString(),
@@ -525,7 +558,11 @@ export default {
   },
   computed: {
     ...mapGetters("people", ["team"]),
-    ...mapGetters("avatars", ["avatars", "suspendedAvatars"]),
+    ...mapGetters("avatars", [
+      "avatars",
+      "suspendedAvatars",
+      "fetchingFromTwitter",
+    ]),
     ...mapGetters("stats", ["totals", "tops"]),
     ...mapGetters("report", ["minDate", "maxDate"]),
     dateRangeText() {
@@ -641,6 +678,13 @@ export default {
     },
   },
   methods: {
+    fetchFromTwitter() {
+      this.alert = true;
+
+      this.$store.dispatch("avatars/getAvatarsFromTwitter", {
+        token: this.token,
+      });
+    },
     prepareWeeklyReport() {
       //Lets send the date range for the weekly report here
       /**eslint-disable */
