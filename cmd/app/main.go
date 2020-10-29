@@ -11,8 +11,6 @@ import (
 	"os/signal"
 	"strconv"
 
-	"github.com/robfig/cron/v3"
-
 	"ekraal.org/avatarlysis/api"
 	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/foundation/database"
@@ -99,13 +97,13 @@ func main() {
 	}
 
 	// pass in your specific zone name, using Kenya/Nairobi as example
-	c := cron.New()
-	c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
-		if err := api.TwitterLookup(); err != nil {
-			logger.Println(err)
-		}
-	})
-	c.Start()
+	// c := cron.New()
+	// c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
+	// 	if err := api.TwitterLookup(); err != nil {
+	// 		logger.Println(err)
+	// 	}
+	// })
+	// c.Start()
 
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
