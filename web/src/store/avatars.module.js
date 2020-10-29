@@ -9,6 +9,7 @@ export default {
     assignAvatars: false,
     avatarsByUser: false,
     uploadAvatars:false,
+    fetchFromTwitter:false,
     userAvatars: [],
     suspendedAvatars:[]
   },
@@ -20,10 +21,22 @@ export default {
     assigning: (state) => state.assignAvatars,
     fetchAvatarsByUser: (state) => state.avatarsByUser,
     suspendedAvatars:(state)=> state.suspendedAvatars,
+    fetchingFromTwitter:(state)=> state.fetchFromTwitter,
     userAvatars: (state) => state.userAvatars
   },
 
   actions: {
+    getAvatarsFromTwitter({commit},payload){
+     const {token} = payload
+     commit("fetchFromTwitter")
+     AvatarService.getAvatarsFromTwitter(token).then(response => {
+       if(response.status === 200){
+commit("fetchFromTwitterSuccess",{message:"fetched twitter avatars successsfully"})
+       }
+     }).catch(err =>{
+       commit("fetchFromTwitterFailure",{message:err.response.data.error})
+     })
+    },
     getAvatars({ commit }, payload) {
       const { token } = payload
       commit("updateAvatarFetchStatus")
@@ -101,7 +114,21 @@ export default {
     updateAvatarFetchStatus(state) {
       state.fetchAvatars = true;
     },
-   
+   fetchFromTwitter(state){
+     state.fetchFromTwitter = true
+   },
+   fetchFromTwitterSuccess(state,payload){
+   const {message} = payload
+   state.fetchFromTwitter = false
+   /**eslint-disable */
+   console.log("FETCH_FROM_TWITTER",message)
+   },
+   fetchFromTwitterFailure(state,payload){
+    const {message} = payload
+    state.fetchFromTwitter = false
+    /**eslint-disable */
+    console.log("FETCH_FROM_TWITTER",message)
+   },
     avatarFetchSuccess(state, payload) {
       const { avatars } = payload;
       /**eslint-disable */
