@@ -728,6 +728,40 @@ func GetWeeklySuspendedAccounts(ctx context.Context, db *sqlx.DB, startDate, end
 	return avatars, nil
 }
 
+//GetWeeklyInactiveAccounts retrieves those accounts which have the same number of tweets between those two given dates.
+//Returns the inactive accounts ,the count and a nil error otherwise it returns -1 as the count and empty slice (nil) with the error.
+func GetWeeklyInactiveAccounts(ctx context.Context, db *sqlx.DB, startDate, endDate string) ([]*Avatar, int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select fin.person,fin.username from beg inner join fin on beg.tweets=fin.tweets where beg.tweets > 0 and fin.tweets > 0 group by fin.username,fin.person", startDate, endDate)
+
+	var avatars []*Avatar
+
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, -1, err
+	}
+
+	return avatars, len(avatars), nil
+}
+
+//GetWeeklyUnusedAccounts retrieves those accounts which have the same number of tweets between those two given dates.
+//Returns the unused accounts ,the count and a nil error otherwise it returns -1 as the count and empty slice (nil) with the error.
+func GetWeeklyUnusedAccounts(ctx context.Context, db *sqlx.DB, startDate, endDate string) ([]*Avatar, int, error) {
+	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
+	defer span.End()
+
+	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles)	select fin.person,fin.username from beg inner join fin on beg.tweets=fin.tweets where beg.tweets = 0 and fin.tweets = 0 group by fin.username,fin.person", startDate, endDate)
+
+	var avatars []*Avatar
+
+	if err := db.SelectContext(ctx, &avatars, q); err != nil {
+		return nil, -1, err
+	}
+
+	return avatars, len(avatars), nil
+}
+
 //GetWeeklyNewAccts get all new accounts added to the database between the during the two given dates
 func GetWeeklyNewAccts(ctx context.Context, db *sqlx.DB, startDate, endDate string) (int, error) {
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
