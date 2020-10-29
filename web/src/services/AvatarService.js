@@ -15,5 +15,8 @@ export default {
   },
   getAvatarsByUser(token, id) {
     return Api(token).get(`/api/avatar/${id}`)
+  },
+  getAvatarsFromTwitter(token){
+    return Api(token).get('/api/lookup/twitter')
   }
 }
