@@ -17,6 +17,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/go-chi/chi"
 	"github.com/pkg/errors"
+	"github.com/robfig/cron/v3"
 )
 
 //Config declares any external config that our service needs
@@ -97,13 +98,13 @@ func main() {
 	}
 
 	// pass in your specific zone name, using Kenya/Nairobi as example
-	// c := cron.New()
-	// c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
-	// 	if err := api.TwitterLookup(); err != nil {
-	// 		logger.Println(err)
-	// 	}
-	// })
-	// c.Start()
+	c := cron.New()
+	c.AddFunc("CRON_TZ=Africa/Nairobi 00 09 * * *", func() {
+		if err := api.TwitterLookup(); err != nil {
+			logger.Println(err)
+		}
+	})
+	c.Start()
 
 	go func() {
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
