@@ -962,48 +962,59 @@ func (s *Server) TwitterLookup() error {
 			dict[strings.ToLower(avatar.Username)] = avatar.ID
 		}
 
-		twitter := service.NewTwitter(s.cfg.TwitterConsumerKey, s.cfg.TwitterConsumerSecret, s.cfg.TwitterAccessToken, s.cfg.TwitterTokenURL)
+		twitter := service.NewTwitter(s.cfg.TwitterConsumerKey, s.cfg.TwitterConsumerSecret, s.cfg.TwitterAccessSecret, s.cfg.TwitterAccessToken, s.cfg.TwitterTokenURL)
 
 		chunks := chunkBy(usernames, 100)
 		var nps []profile.NewProfile
 		now := time.Now()
+		var terror error
 		for _, chunk := range chunks {
 
-			tusers := twitter.Lookup(ctx, chunk)
-
-			for _, user := range tusers {
-				np := profile.NewProfile{}
-				np.ID = uuid.New().String()
-				np.CreatedAt = now
-				np.UpdatedAt = now
-				avatarID, ok := dict[strings.ToLower(user.ScreenName)] //We just being paranoid just incase
-				//because tusers only contains the usernames whose accounts actually exist in twitter which in any case
-				// they already exist in our database
-				if !ok {
-					continue //skip to the next iteration
+			tusers, err := twitter.Lookup(ctx, chunk)
+			if err != nil {
+				terror = err
+				break
+			}
+			if len(tusers) > 0 {
+				for _, user := range tusers {
+					np := profile.NewProfile{}
+					np.ID = uuid.New().String()
+					np.CreatedAt = now
+					np.UpdatedAt = now
+					avatarID, ok := dict[strings.ToLower(user.ScreenName)] //We just being paranoid just incase
+					//because tusers only contains the usernames whose accounts actually exist in twitter which in any case
+					// they already exist in our database
+					if !ok {
+						continue //skip to the next iteration
+					}
+					np.AvatarID = stringPointer(avatarID)
+					np.Name = stringPointer(user.Name)
+					np.Followers = intPointer(user.FollowersCount)
+					np.Following = intPointer(user.FriendsCount)
+					np.Likes = intPointer(user.FavouritesCount)
+					np.Tweets = intPointer(user.StatusesCount)
+					np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
+					np.Bio = stringPointer(user.Description)
+					np.TwitterID = stringPointer(user.IDStr)
+					np.JoinDate = stringPointer(user.CreatedAt)
+					np.LastTweetTime = stringPointer(twitter.LastTweetTime(user.ID))
+					nps = append(nps, np)
+					// if err := profile.Create(s.ctx, s.db, &np, now); err != nil {
+					// 	fmt.Printf("profiler: %v\n", err)
+					// 	return err
+					// }
 				}
-				np.AvatarID = stringPointer(avatarID)
-				np.Name = stringPointer(user.Name)
-				np.Followers = intPointer(user.FollowersCount)
-				np.Following = intPointer(user.FriendsCount)
-				np.Likes = intPointer(user.FavouritesCount)
-				np.Tweets = intPointer(user.StatusesCount)
-				np.ProfileImageURL = stringPointer(strings.ReplaceAll(user.ProfileImageURLHttps, "_normal", ""))
-				np.Bio = stringPointer(user.Description)
-				np.TwitterID = stringPointer(user.IDStr)
-				np.JoinDate = stringPointer(user.CreatedAt)
-				np.LastTweetTime = stringPointer(twitter.LastTweetTime(user.ID))
-				nps = append(nps, np)
-				// if err := profile.Create(s.ctx, s.db, &np, now); err != nil {
-				// 	fmt.Printf("profiler: %v\n", err)
-				// 	return err
-				// }
 			}
 		}
+		if terror != nil {
+			return terror
+		}
+
 		if err := profile.CreateMultiple(s.ctx, s.db, nps, now); err != nil {
 			fmt.Printf("profiler: %v\n", err)
 			return err
 		}
+
 	}
 	return nil
 }
