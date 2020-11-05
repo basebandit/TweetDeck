@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/dghubble/go-twitter v0.0.0-20200725221434-4bc8ad7ad1b4
+	github.com/dghubble/oauth1 v0.6.0
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/dimiro1/darwin v0.0.0-20191008194338-370f81775d3b
 	github.com/fatih/structs v1.1.0
