@@ -30,7 +30,7 @@ func Create(ctx context.Context, db *sqlx.DB, np *NewProfile, now time.Time) err
 	np.CreatedAt = now
 	np.UpdatedAt = now
 
-	const q = `INSERT INTO profiles (id,avatar_id,followers,following,tweets,likes,bio,name,twitter_id,profile_image_url,last_tweet_time,join_date,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`
+	const q = `INSERT INTO profiles (id,avatar_id,followers,following,tweets,likes,bio,name,twitter_id,profile_image_url,last_tweet_time,join_date,created_at,updated_at) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) ON CONFLICT ON CONSTRAINT idx_profiles_created_at  DO UPDATE SET avatar_id=EXCLUDED.avatar_id,followers=EXCLUDED.followers,"following"=EXCLUDED.following,tweets=EXCLUDED.tweets,likes=EXCLUDED.likes,bio=EXCLUDED.bio,"name"=EXCLUDED.name,twitter_id=EXCLUDED.twitter_id,profile_image_url=EXCLUDED.profile_image_url,last_tweet_time=EXCLUDED.last_tweet_time,join_date=EXCLUDED.join_date,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at`
 
 	if _, err := db.ExecContext(ctx, q, np.ID, np.AvatarID, np.Followers, np.Following, np.Tweets, np.Likes, np.Bio, np.Name, np.TwitterID, np.ProfileImageURL, np.LastTweetTime, np.JoinDate, np.CreatedAt, np.UpdatedAt); err != nil {
 		return errors.Wrap(err, "inserting profile")
@@ -53,22 +53,22 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 
 	if len(np) > 0 {
 
-		var (
-			avatarID        string
-			following       int
-			followers       int
-			tweets          int
-			likes           int
-			bio             string
-			name            string
-			twitterID       string
-			profileImageURL string
-			lastTweetTime   string
-			joinDate        string
-		)
-
 		for i, p := range np {
 			p1 := i * 14
+
+			var (
+				avatarID        string
+				following       int
+				followers       int
+				tweets          int
+				likes           int
+				bio             string
+				name            string
+				twitterID       string
+				profileImageURL string
+				lastTweetTime   string
+				joinDate        string
+			)
 
 			if p.Following != nil {
 				following = *p.Following
@@ -123,11 +123,23 @@ func CreateMultiple(ctx context.Context, db *sqlx.DB, np []NewProfile, now time.
 
 		q = q[:len(q)-1] //remove trailing ","
 
-		q += ` ON CONFLICT ON CONSTRAINT idx_profiles_created_at DO UPDATE SET avatar_id=EXCLUDED.avatar_id,followers=EXCLUDED.followers,"following"=EXCLUDED.following,tweets=EXCLUDED.tweets,likes=EXCLUDED.likes,bio=EXCLUDED.bio,"name"=EXCLUDED.name,twitter_id=EXCLUDED.twitter_id,profile_image_url=EXCLUDED.profile_image_url,last_tweet_time=EXCLUDED.last_tweet_time,join_date=EXCLUDED.join_date,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at`
+		// q += ` ON CONFLICT ON CONSTRAINT idx_profiles_created_at DO UPDATE SET avatar_id=EXCLUDED.avatar_id,followers=EXCLUDED.followers,"following"=EXCLUDED.following,tweets=EXCLUDED.tweets,likes=EXCLUDED.likes,bio=EXCLUDED.bio,"name"=EXCLUDED.name,twitter_id=EXCLUDED.twitter_id,profile_image_url=EXCLUDED.profile_image_url,last_tweet_time=EXCLUDED.last_tweet_time,join_date=EXCLUDED.join_date,created_at=EXCLUDED.created_at,updated_at=EXCLUDED.updated_at`
 
-		if _, err := db.ExecContext(ctx, q, insertParams...); err != nil {
+		q += ` ON CONFLICT ON CONSTRAINT idx_profiles_created_at DO NOTHING`
+
+		// fmt.Printf("%v\n", q)
+
+		result, err := db.ExecContext(ctx, q, insertParams...)
+		if err != nil {
 			return errors.Wrap(err, "inserting multiple profiles")
 		}
+
+		rows, err := result.RowsAffected()
+		if err != nil {
+			fmt.Printf("Create multiple %v\n", err)
+		}
+
+		fmt.Printf("Rows affected %v\n", rows)
 	}
 	return nil
 }
