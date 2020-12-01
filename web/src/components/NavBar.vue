@@ -8,14 +8,14 @@
       </v-toolbar-title>
       <v-spacer></v-spacer>
       <v-menu offset-y>
-        <template v-slot:activator="{on,attrs}">
+        <template v-slot:activator="{ on, attrs }">
           <v-btn v-bind="attrs" v-on="on" text color="grey">
             <v-icon left>expand_more</v-icon>menu
           </v-btn>
         </template>
         <v-list>
           <v-list-item v-for="link in links" :key="link.text" :to="link.route">
-            <v-list-item-title>{{link.text}}</v-list-item-title>
+            <v-list-item-title>{{ link.text }}</v-list-item-title>
           </v-list-item>
         </v-list>
       </v-menu>
@@ -29,10 +29,11 @@
       <v-row class="mt-5">
         <v-col align="center">
           <v-avatar size="100">
-            <img src="/avatar-1.png" alt />
+            <img src="/logo.jpg" alt />
           </v-avatar>
           <p class="white--text subheading mt-1">
-            <v-icon small left class="white--text">mdi-cog-outline</v-icon>The Basebandit
+            <!-- <v-icon small left class="white--text">mdi-cog-outline</v-icon> -->
+            Avatarlysis v0.9.6
           </p>
           <v-col class="mt-4 mb-3">
             <Popup />
@@ -43,10 +44,12 @@
       <v-list>
         <v-list-item v-for="link in links" :key="link.text" :to="link.route">
           <v-list-item-icon>
-            <v-icon class="white--text">{{link.icon}}</v-icon>
+            <v-icon class="white--text">{{ link.icon }}</v-icon>
           </v-list-item-icon>
           <v-list-item-content>
-            <v-list-item-title class="white--text">{{link.text}}</v-list-item-title>
+            <v-list-item-title class="white--text">{{
+              link.text
+            }}</v-list-item-title>
           </v-list-item-content>
         </v-list-item>
       </v-list>
