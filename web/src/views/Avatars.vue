@@ -1,6 +1,20 @@
 <template>
   <div class="avatars">
     <v-container class="my-5">
+      <v-row>
+        <v-col>
+          <v-breadcrumbs :items="breadcrumbs">
+            <template v-slot:item="{ item }">
+              <v-breadcrumbs-item :href="item.href" :disabled="item.disabled">
+                {{ item.text.toUpperCase() }}
+              </v-breadcrumbs-item>
+            </template>
+            <template v-slot:divider>
+              <v-icon>mdi-chevron-right</v-icon>
+            </template>
+          </v-breadcrumbs>
+        </v-col>
+      </v-row>
       <v-data-iterator
         :items="avatars"
         item-key="username"
@@ -453,6 +467,18 @@ export default {
       assigneeID: [],
       reassignee: "",
       reassigneeID: [],
+      breadcrumbs: [
+        {
+          text: "Dashboard",
+          disabled: false,
+          href: "/dashboard",
+        },
+        {
+          text: "Avatars",
+          disabled: true,
+          href: "/avatars",
+        },
+      ],
     };
   },
   mounted() {
