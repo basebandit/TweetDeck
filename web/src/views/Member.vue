@@ -3,6 +3,20 @@
     <v-container class="my-5">
       <v-row>
         <v-col>
+          <v-breadcrumbs :items="breadcrumbs">
+            <template v-slot:item="{ item }">
+              <v-breadcrumbs-item :href="item.href" :disabled="item.disabled">
+                {{ item.text.toUpperCase() }}
+              </v-breadcrumbs-item>
+            </template>
+            <template v-slot:divider>
+              <v-icon>mdi-chevron-right</v-icon>
+            </template>
+          </v-breadcrumbs>
+        </v-col>
+      </v-row>
+      <v-row>
+        <v-col>
           <v-card>
             <v-card-title>Member Profile</v-card-title>
           </v-card>
@@ -284,6 +298,23 @@ export default {
       sortDesc: false,
       page: 1,
       sortByHandle: "handle",
+      breadcrumbs: [
+        {
+          text: "Dashboard",
+          disabled: false,
+          href: "/dashboard",
+        },
+        {
+          text: "Team",
+          disabled: false,
+          href: "/team",
+        },
+        {
+          text: "Member",
+          disabled: true,
+          href: "/member",
+        },
+      ],
     };
   },
   mounted() {
