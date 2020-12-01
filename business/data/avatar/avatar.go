@@ -246,7 +246,7 @@ func GetNewAccounts(ctx context.Context, db *sqlx.DB) (int, error) {
 		return count, errors.Wrap(err, "selecting new avatars")
 	}
 
-	fmt.Println("Counts", count)
+	// fmt.Println("Counts", count)
 	return count, nil
 }
 
@@ -542,7 +542,7 @@ func AggregateAvatarByUserID(ctx context.Context, db *sqlx.DB, userID string) (A
 	avatar.Followers = intPointer(followers)
 	avatar.Following = intPointer(following)
 
-	fmt.Printf("Username: %s,Following: %d, Followers%d\n", avatar.Username, *avatar.Following, *avatar.Followers)
+	// fmt.Printf("Username: %s,Following: %d, Followers%d\n", avatar.Username, *avatar.Following, *avatar.Followers)
 
 	return avatar, nil
 }
@@ -784,7 +784,8 @@ func GetTotalWeeklyActiveAccounts(ctx context.Context, db *sqlx.DB, startDate, e
 	ctx, span := global.Tracer("avatarlysis").Start(ctx, "business.data.avatar.gettopfivebyfollowers")
 	defer span.End()
 
-	var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select count(beg.username) from beg where username in (select fin.username from fin)", startDate, endDate)
+	// var q = fmt.Sprintf("with beg as (select * from (select p.id,a.username, (select concat(firstname,' ',lastname) as username	from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles), fin as (select * from (select p.id,a.username,(select concat(firstname,' ',lastname) as username from users where id=a.user_id) as person, p.tweets, p.followers, p.\"following\", p.likes, p.created_at from profiles p left join avatars a on p.avatar_id=a.id where p.created_at=date('%s')) as profiles) select count(beg.username) from beg where username in (select fin.username from fin)", startDate, endDate)
+	var q = fmt.Sprintf("select count(*) from profiles where created_at=date('%s')", endDate)
 
 	var count int
 
