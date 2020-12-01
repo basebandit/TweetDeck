@@ -1,7 +1,20 @@
 <template>
   <div class="team">
-    <h1>Team</h1>
     <v-container class="my-5">
+      <v-row>
+        <v-col>
+          <v-breadcrumbs :items="breadcrumbs">
+            <template v-slot:item="{ item }">
+              <v-breadcrumbs-item :href="item.href" :disabled="item.disabled">
+                {{ item.text.toUpperCase() }}
+              </v-breadcrumbs-item>
+            </template>
+            <template v-slot:divider>
+              <v-icon>mdi-chevron-right</v-icon>
+            </template>
+          </v-breadcrumbs>
+        </v-col>
+      </v-row>
       <v-card class="pa-3">
         <v-card-title class="my-3">Team Members</v-card-title>
         <v-card-text>
@@ -160,6 +173,18 @@ export default {
         { text: "Followers", value: "followers" },
         { text: "Following", value: "following" },
         { text: "Tweets", value: "tweets" },
+      ],
+      breadcrumbs: [
+        {
+          text: "Dashboard",
+          disabled: false,
+          href: "/dashboard",
+        },
+        {
+          text: "Team",
+          disabled: true,
+          href: "/team",
+        },
       ],
       dialog: false,
       valid: true,
