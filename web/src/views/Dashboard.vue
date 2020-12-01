@@ -1,346 +1,326 @@
 <template>
   <div class="home">
-    <v-toolbar
-      class="pt-3"
-      extended
-      flat
-      style="position: -webkit-sticky; position: sticky; top: 4rem; z-index: 1"
-    >
-      <v-row no-gutters class="mt-3 mb-0">
-        <v-col align="left">
-          <span class="headline grey--text">Dashboard</span>
-        </v-col>
-
-        <div align="right">
-          <v-tooltip top>
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn
-                fab
-                text
-                @click="fetchFromTwitter"
-                v-on="on"
-                v-bind="attrs"
-                slot="activator"
-              >
-                <v-icon small> mdi-cloud-download </v-icon>
-              </v-btn>
-            </template>
-            <span>Refresh from twitter</span>
-          </v-tooltip>
-          <v-menu
-            v-model="menu"
-            :close-on-content-click="false"
-            :nudge-width="200"
-            offset-x
-          >
-            <template v-slot:activator="{ on, attrs }">
-              <v-btn color="grey" icon v-bind="attrs" v-on="on">
-                <v-icon>mdi-dots-vertical</v-icon>
-              </v-btn>
-            </template>
-
-            <v-list>
-              <v-list-item @click.stop="showDailyReport">
-                <v-list-item-icon>
-                  <v-icon>mdi-file-pdf</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Daily Report</v-list-item-title>
-              </v-list-item>
-              <v-list-item @click.stop="weeklyReportDialog = true">
-                <v-list-item-icon>
-                  <v-icon>mdi-file-pdf</v-icon>
-                </v-list-item-icon>
-                <v-list-item-title>Weekly Report</v-list-item-title>
-              </v-list-item>
-            </v-list>
-          </v-menu>
-          <v-dialog v-model="weeklyReportDialog" persistent max-width="900">
-            <v-card>
-              <v-card-title class="headline">
-                Choose the date range for weekly report
-              </v-card-title>
-              <v-card-text>
-                <v-row>
-                  <v-col cols="12" sm="6">
-                    <v-date-picker
-                      v-model="dates"
-                      :min="minDate"
-                      :max="maxDate"
-                      range
-                    ></v-date-picker>
-                  </v-col>
-                  <v-col cols="12" sm="6">
-                    <v-text-field
-                      v-model="dateRangeText"
-                      label="Date range"
-                      prepend-icon="mdi-calendar"
-                      readonly
-                    ></v-text-field>
-                    <span v-if="dateRangeError != ''">{{
-                      dateRangeError
-                    }}</span>
-                  </v-col>
-                </v-row>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn
-                  color="green darken-1"
-                  text
-                  @click="weeklyReportDialog = false"
-                >
-                  Cancel
-                </v-btn>
-                <v-btn
-                  color="green darken-1"
-                  text
-                  @click="prepareWeeklyReport()"
-                >
-                  Ok
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-dialog>
-        </div>
-      </v-row>
-    </v-toolbar>
     <v-container class="my-3">
-      <div ref="contentHTML" id="contentHTML">
-        <!-- <v-alert
-          v-model="alert"
-          close-text="Close Alert"
-          dark
-          icon="mdi-vuetify"
-          border="left"
-          dismisible
-        >
-          Praesent congue erat at massa. Nullam vel sem. Aliquam lorem ante,
-          dapibus in, viverra quis, feugiat a, tellus. Proin viverra, ligula sit
-          amet ultrices semper, ligula arcu tristique sapien, a accumsan nisi
-          mauris ac eros. Curabitur at lacus ac velit ornare lobortis.
-        </v-alert> -->
-        <v-alert
-          v-model="alert"
-          border="left"
-          close-text="Close Alert"
-          type="warning"
-          :loading="fetchingFromTwitter"
-          dark
-          dismissible
-        >
-          This is a long running task and will take time approximately not less
-          than 12 minutes. You might as well keep yourself busy while we crank
-          the data for you.Come back later to check results
-        </v-alert>
-        <v-row class="my-5">
-          <v-col justify="space-around">
-            <v-card class="pa-2">
-              <v-card-title class="subheading grey--text">
-                Accounts Overview
-              </v-card-title>
-              <v-row justify="space-around">
-                <v-btn text color="success">
-                  <v-icon dark left>mdi-account-check</v-icon>
-                  <span class="mx-2">{{ accounts.active }}</span
-                  >Active Accounts
-                </v-btn>
-                <span class="mx-1">|</span>
-                <v-btn text color="error">
-                  <v-icon>mdi-account-alert</v-icon>
-                  <span class="mx-2">{{ accounts.suspended }}</span> Suspended
-                  Accounts
-                </v-btn>
-                <span class="mx-1">|</span>
-                <v-btn text color="primary">
-                  <v-icon>mdi-account-multiple-check</v-icon>
-                  <span class="mx-2">{{ accounts.assigned }}</span> Assigned
-                  Active Accounts
-                </v-btn>
-                <span class="mx-1">|</span>
-                <v-btn text disabled>
-                  <v-icon>mdi-account-multiple-remove</v-icon>
-                  <span class="mx-2">{{ accounts.unassigned }}</span> Unassigned
-                  Active Accounts
-                </v-btn>
+      <v-toolbar
+        class="pt-3"
+        extended
+        flat
+        style="
+          position: -webkit-sticky;
+          position: sticky;
+          top: 4rem;
+          z-index: 1;
+        "
+      >
+        <v-row no-gutters class="mt-3">
+          <v-col>
+            <v-breadcrumbs :items="breadcrumbs">
+              <template v-slot:item="{ item }">
+                <v-breadcrumbs-item :href="item.href" :disabled="item.disabled">
+                  {{ item.text.toUpperCase() }}
+                </v-breadcrumbs-item>
+              </template>
+              <template v-slot:divider>
+                <v-icon>mdi-chevron-right</v-icon>
+              </template>
+            </v-breadcrumbs>
+          </v-col>
+          <v-col>
+            <div align="right">
+              <v-tooltip top>
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn
+                    fab
+                    text
+                    @click="fetchFromTwitter"
+                    v-on="on"
+                    v-bind="attrs"
+                    slot="activator"
+                  >
+                    <v-icon small> mdi-cloud-download </v-icon>
+                  </v-btn>
+                </template>
+                <span>Refresh from twitter</span>
+              </v-tooltip>
+              <v-menu
+                v-model="menu"
+                :close-on-content-click="false"
+                :nudge-width="200"
+                offset-x
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <v-btn color="grey" icon v-bind="attrs" v-on="on">
+                    <v-icon>mdi-dots-vertical</v-icon>
+                  </v-btn>
+                </template>
+
+                <v-list>
+                  <v-list-item @click.stop="showDailyReport">
+                    <v-list-item-icon>
+                      <v-icon>mdi-file-pdf</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>Daily Report</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click.stop="weeklyReportDialog = true">
+                    <v-list-item-icon>
+                      <v-icon>mdi-file-pdf</v-icon>
+                    </v-list-item-icon>
+                    <v-list-item-title>Weekly Report</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+              <v-dialog v-model="weeklyReportDialog" persistent max-width="900">
+                <v-card>
+                  <v-card-title class="headline">
+                    Choose the date range for weekly report
+                  </v-card-title>
+                  <v-card-text>
+                    <v-row>
+                      <v-col cols="12" sm="6">
+                        <v-date-picker
+                          v-model="dates"
+                          :min="minDate"
+                          :max="maxDate"
+                          range
+                        ></v-date-picker>
+                      </v-col>
+                      <v-col cols="12" sm="6">
+                        <v-text-field
+                          v-model="dateRangeText"
+                          label="Date range"
+                          prepend-icon="mdi-calendar"
+                          readonly
+                        ></v-text-field>
+                        <span v-if="dateRangeError != ''">{{
+                          dateRangeError
+                        }}</span>
+                      </v-col>
+                    </v-row>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-spacer></v-spacer>
+                    <v-btn
+                      color="green darken-1"
+                      text
+                      @click="weeklyReportDialog = false"
+                    >
+                      Cancel
+                    </v-btn>
+                    <v-btn
+                      color="green darken-1"
+                      text
+                      @click="prepareWeeklyReport()"
+                    >
+                      Ok
+                    </v-btn>
+                  </v-card-actions>
+                </v-card>
+              </v-dialog>
+            </div>
+          </v-col>
+        </v-row>
+      </v-toolbar>
+
+      <v-alert
+        v-model="alert"
+        border="left"
+        close-text="Close Alert"
+        type="warning"
+        :loading="fetchingFromTwitter"
+        dark
+        dismissible
+      >
+        This is a long running task and will take time approximately not less
+        than 12 minutes. You might as well keep yourself busy while we crank the
+        data for you.Come back later to check results
+      </v-alert>
+      <v-row class="my-5">
+        <v-col justify="space-around">
+          <v-card class="pa-2">
+            <v-card-title class="subheading grey--text">
+              Accounts Overview
+            </v-card-title>
+            <v-row justify="space-around">
+              <v-btn text color="success">
+                <v-icon dark left>mdi-account-check</v-icon>
+                <span class="mx-2">{{ accounts.active }}</span
+                >Active Accounts
+              </v-btn>
+              <span class="mx-1">|</span>
+              <v-btn text color="error">
+                <v-icon>mdi-account-alert</v-icon>
+                <span class="mx-2">{{ accounts.suspended }}</span> Suspended
+                Accounts
+              </v-btn>
+              <span class="mx-1">|</span>
+              <v-btn text color="primary">
+                <v-icon>mdi-account-multiple-check</v-icon>
+                <span class="mx-2">{{ accounts.assigned }}</span> Assigned
+                Active Accounts
+              </v-btn>
+              <span class="mx-1">|</span>
+              <v-btn text disabled>
+                <v-icon>mdi-account-multiple-remove</v-icon>
+                <span class="mx-2">{{ accounts.unassigned }}</span> Unassigned
+                Active Accounts
+              </v-btn>
+            </v-row>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="mb-3">
+        <v-col v-for="(stat, index) in stats" :key="index">
+          <v-card :class="`stat ${stat.name}`">
+            <v-card-title class="headline">
+              <span>{{ stat.total }}</span>
+              <v-spacer></v-spacer>
+              <span>
+                <v-icon right color="primary">{{ stat.icon }}</v-icon>
+              </span>
+            </v-card-title>
+            <v-card-subtitle>{{ stat.name }}</v-card-subtitle>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="mb-3">
+        <v-col cols="12" lg="8" md="8">
+          <v-card flat class="mx-auto" v-if="tops.tweets">
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Tweets</v-card-title
+            >
+            <div
+              v-for="(avatar, index) in tops.tweets"
+              :key="avatar.username"
+              :class="`avatar-${index + 1}`"
+            >
+              <v-row class="px-3">
+                <v-col>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Avatar</div>
+                  <div>@{{ avatar.username }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Number of tweets</div>
+                  <div>{{ avatar.tweets }}</div>
+                </v-col>
               </v-row>
-            </v-card>
-          </v-col>
-        </v-row>
+              <v-divider></v-divider>
+            </div>
+          </v-card>
 
-        <v-row class="mb-3">
-          <v-col v-for="(stat, index) in stats" :key="index">
-            <v-card :class="`stat ${stat.name}`">
-              <v-card-title class="headline">
-                <span>{{ stat.total }}</span>
-                <v-spacer></v-spacer>
-                <span>
-                  <v-icon right color="primary">{{ stat.icon }}</v-icon>
-                </span>
-              </v-card-title>
-              <v-card-subtitle>{{ stat.name }}</v-card-subtitle>
-            </v-card>
-          </v-col>
-        </v-row>
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Tweets</v-card-title
+            >
 
-        <!-- <v-row class="mb-3">
-        <v-col cols="12">
-          <v-card>
-            <v-card-title class="headline">Total Daily Tweets</v-card-title>
             <v-card-text>
-              <line-chart
-                thousands=","
-                label="Total Tweets"
-                ytitle="No of tweets"
-                xtitle="Days"
-                :data="totalDailyTweets"
-                :legend="true"
-              ></line-chart>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
             </v-card-text>
           </v-card>
         </v-col>
-      </v-row> -->
-
-        <v-row class="mb-3">
-          <v-col cols="12" lg="8" md="8">
-            <v-card flat class="mx-auto" v-if="tops.tweets">
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Tweets</v-card-title
-              >
-              <div
-                v-for="(avatar, index) in tops.tweets"
-                :key="avatar.username"
-                :class="`avatar-${index + 1}`"
-              >
-                <v-row class="px-3">
-                  <v-col>
-                    <div class="caption grey--text">Person</div>
-                    <div>{{ avatar.person || "Unassigned" }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Avatar</div>
-                    <div>@{{ avatar.username }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Number of tweets</div>
-                    <div>{{ avatar.tweets }}</div>
-                  </v-col>
-                </v-row>
-                <v-divider></v-divider>
-              </div>
-            </v-card>
-
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Tweets</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4" lg="4">
-            <v-card
-              class="mx-auto pa-3"
-              v-if="Object.keys(topFiveAvatarsByTweets).length > 0"
+        <v-col cols="12" md="4" lg="4">
+          <v-card
+            class="mx-auto pa-3"
+            v-if="Object.keys(topFiveAvatarsByTweets).length > 0"
+          >
+            <v-card-title class="headline"
+              >Top 5 Avatars By Tweets</v-card-title
             >
-              <v-card-title class="headline"
-                >Top 5 Avatars By Tweets</v-card-title
-              >
-              <v-card-text>
-                <pie-chart
-                  :round="2"
-                  suffix="%"
-                  :data="topFiveAvatarsByTweets"
-                />
-              </v-card-text>
-            </v-card>
+            <v-card-text>
+              <pie-chart :round="2" suffix="%" :data="topFiveAvatarsByTweets" />
+            </v-card-text>
+          </v-card>
 
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Tweets</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <v-row class="mb-3">
-          <v-col cols="12" lg="8" md="8">
-            <v-card flat class="mx-auto" v-if="tops.following">
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Following</v-card-title
-              >
-              <div
-                v-for="(avatar, index) in tops.following"
-                :key="avatar.username"
-                :class="`avatar-${index + 1}`"
-              >
-                <v-row class="px-3">
-                  <v-col>
-                    <div class="caption grey--text">Person</div>
-                    <div>{{ avatar.person || "Unassigned" }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Avatar</div>
-                    <div>@{{ avatar.username }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Number of followings</div>
-                    <div>{{ avatar.following }}</div>
-                  </v-col>
-                </v-row>
-                <v-divider></v-divider>
-              </div>
-            </v-card>
-
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Following</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4" lg="4">
-            <v-card
-              class="mx-auto pa-3"
-              v-if="Object.keys(topFiveAvatarsByFollowing).length > 0"
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Tweets</v-card-title
             >
-              <v-card-title class="headline"
-                >Top 5 Avatars By Following</v-card-title
-              >
-              <v-card-text>
-                <pie-chart
-                  :round="2"
-                  suffix="%"
-                  :data="topFiveAvatarsByFollowing"
-                />
-              </v-card-text>
-            </v-card>
 
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Following</v-card-title
-              >
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+      <v-row class="mb-3">
+        <v-col cols="12" lg="8" md="8">
+          <v-card flat class="mx-auto" v-if="tops.following">
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Following</v-card-title
+            >
+            <div
+              v-for="(avatar, index) in tops.following"
+              :key="avatar.username"
+              :class="`avatar-${index + 1}`"
+            >
+              <v-row class="px-3">
+                <v-col>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Avatar</div>
+                  <div>@{{ avatar.username }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Number of followings</div>
+                  <div>{{ avatar.following }}</div>
+                </v-col>
+              </v-row>
+              <v-divider></v-divider>
+            </div>
+          </v-card>
 
-        <!-- <v-row class="mb-3">
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Following</v-card-title
+            >
+
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="4" lg="4">
+          <v-card
+            class="mx-auto pa-3"
+            v-if="Object.keys(topFiveAvatarsByFollowing).length > 0"
+          >
+            <v-card-title class="headline"
+              >Top 5 Avatars By Following</v-card-title
+            >
+            <v-card-text>
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topFiveAvatarsByFollowing"
+              />
+            </v-card-text>
+          </v-card>
+
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Following</v-card-title
+            >
+
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- <v-row class="mb-3">
         <v-col cols="12">
           <v-card>
             <v-card-title class="headline">Total Daily Followers</v-card-title>
@@ -357,169 +337,163 @@
           </v-card>
         </v-col>
       </v-row> -->
-        <v-row class="mb-3">
-          <v-col cols="12" lg="8" md="8">
-            <v-card flat class="mx-auto" v-if="tops.followers">
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Followers</v-card-title
-              >
-              <div
-                v-for="(avatar, index) in tops.followers"
-                :key="avatar.username"
-                :class="`avatar-${index + 1}`"
-              >
-                <v-row class="px-3">
-                  <v-col>
-                    <div class="caption grey--text">Person</div>
-                    <div>{{ avatar.person || "Unassigned" }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Avatar</div>
-                    <div>@{{ avatar.username }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Number of followers</div>
-                    <div>{{ avatar.followers }}</div>
-                  </v-col>
-                </v-row>
-                <v-divider></v-divider>
-              </div>
-            </v-card>
-
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Followers</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4" lg="4">
-            <v-card
-              class="pa-3"
-              v-if="Object.keys(topFiveAvatarsByFollowers).length > 0"
+      <v-row class="mb-3">
+        <v-col cols="12" lg="8" md="8">
+          <v-card flat class="mx-auto" v-if="tops.followers">
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Followers</v-card-title
             >
-              <v-card-title class="headline"
-                >Top 5 Avatars By Followers</v-card-title
-              >
-              <v-card-text>
-                <pie-chart
-                  :round="2"
-                  suffix="%"
-                  :data="topFiveAvatarsByFollowers"
-                />
-              </v-card-text>
-            </v-card>
-
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Followers</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
-
-        <v-row class="mb-3">
-          <v-col cols="12" lg="8" md="8">
-            <v-card flat class="mx-auto" v-if="tops.likes">
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Likes</v-card-title
-              >
-              <div
-                v-for="(avatar, index) in tops.likes"
-                :key="avatar.username"
-                :class="`avatar-${index + 1}`"
-              >
-                <v-row class="px-3">
-                  <v-col>
-                    <div class="caption grey--text">Person</div>
-                    <div>{{ avatar.person || "Unassigned" }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Avatar</div>
-                    <div>@{{ avatar.username }}</div>
-                  </v-col>
-                  <v-col>
-                    <div class="caption grey--text">Number of likes</div>
-                    <div>{{ avatar.likes }}</div>
-                  </v-col>
-                </v-row>
-                <v-divider></v-divider>
-              </div>
-            </v-card>
-
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Likes</v-card-title
-              >
-
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-          <v-col cols="12" md="4" lg="4">
-            <v-card
-              class="pa-3"
-              v-if="Object.keys(topFiveAvatarsByLikes).length > 0"
+            <div
+              v-for="(avatar, index) in tops.followers"
+              :key="avatar.username"
+              :class="`avatar-${index + 1}`"
             >
-              <v-card-title class="headline"
-                >Top 5 Avatars By Likes</v-card-title
-              >
-              <v-card-text>
-                <pie-chart
-                  :round="2"
-                  suffix="%"
-                  :data="topFiveAvatarsByLikes"
-                />
-              </v-card-text>
-            </v-card>
+              <v-row class="px-3">
+                <v-col>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Avatar</div>
+                  <div>@{{ avatar.username }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Number of followers</div>
+                  <div>{{ avatar.followers }}</div>
+                </v-col>
+              </v-row>
+              <v-divider></v-divider>
+            </div>
+          </v-card>
 
-            <v-card flat disabled class="mx-auto" v-else>
-              <v-card-title class="align-start"
-                >Top 5 Avatars By Likes</v-card-title
-              >
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Followers</v-card-title
+            >
 
-              <v-card-text>
-                <v-icon large left>mdi-cloud-alert</v-icon>
-                <span class="grey--text">Oops not fetched yet!</span>
-              </v-card-text>
-            </v-card>
-          </v-col>
-        </v-row>
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="4" lg="4">
+          <v-card
+            class="pa-3"
+            v-if="Object.keys(topFiveAvatarsByFollowers).length > 0"
+          >
+            <v-card-title class="headline"
+              >Top 5 Avatars By Followers</v-card-title
+            >
+            <v-card-text>
+              <pie-chart
+                :round="2"
+                suffix="%"
+                :data="topFiveAvatarsByFollowers"
+              />
+            </v-card-text>
+          </v-card>
 
-        <v-row>
-          <v-col>
-            <v-card class="pa-5">
-              <v-card-title>
-                Suspended Accounts
-                <v-spacer></v-spacer>
-                <v-text-field
-                  v-model="search"
-                  append-icon="mdi-magnify"
-                  label="Search"
-                  single-line
-                  hide-details
-                ></v-text-field>
-              </v-card-title>
-              <v-data-table
-                :headers="headers"
-                :items="suspended"
-                :search="search"
-              ></v-data-table>
-            </v-card>
-          </v-col>
-        </v-row>
-      </div>
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Followers</v-card-title
+            >
+
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="mb-3">
+        <v-col cols="12" lg="8" md="8">
+          <v-card flat class="mx-auto" v-if="tops.likes">
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Likes</v-card-title
+            >
+            <div
+              v-for="(avatar, index) in tops.likes"
+              :key="avatar.username"
+              :class="`avatar-${index + 1}`"
+            >
+              <v-row class="px-3">
+                <v-col>
+                  <div class="caption grey--text">Person</div>
+                  <div>{{ avatar.person || "Unassigned" }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Avatar</div>
+                  <div>@{{ avatar.username }}</div>
+                </v-col>
+                <v-col>
+                  <div class="caption grey--text">Number of likes</div>
+                  <div>{{ avatar.likes }}</div>
+                </v-col>
+              </v-row>
+              <v-divider></v-divider>
+            </div>
+          </v-card>
+
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Likes</v-card-title
+            >
+
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="4" lg="4">
+          <v-card
+            class="pa-3"
+            v-if="Object.keys(topFiveAvatarsByLikes).length > 0"
+          >
+            <v-card-title class="headline">Top 5 Avatars By Likes</v-card-title>
+            <v-card-text>
+              <pie-chart :round="2" suffix="%" :data="topFiveAvatarsByLikes" />
+            </v-card-text>
+          </v-card>
+
+          <v-card flat disabled class="mx-auto" v-else>
+            <v-card-title class="align-start"
+              >Top 5 Avatars By Likes</v-card-title
+            >
+
+            <v-card-text>
+              <v-icon large left>mdi-cloud-alert</v-icon>
+              <span class="grey--text">Oops not fetched yet!</span>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row>
+        <v-col>
+          <v-card class="pa-5">
+            <v-card-title>
+              Suspended Accounts
+              <v-spacer></v-spacer>
+              <v-text-field
+                v-model="search"
+                append-icon="mdi-magnify"
+                label="Search"
+                single-line
+                hide-details
+              ></v-text-field>
+            </v-card-title>
+            <v-data-table
+              :headers="headers"
+              :items="suspended"
+              :search="search"
+            ></v-data-table>
+          </v-card>
+        </v-col>
+      </v-row>
+      <!-- </div> -->
     </v-container>
   </div>
 </template>
@@ -545,6 +519,13 @@ export default {
           value: "avatar",
         },
         { text: "Person", value: "person" },
+      ],
+      breadcrumbs: [
+        {
+          text: "Dashboard",
+          disabled: true,
+          href: "/dashboard",
+        },
       ],
     };
   },
