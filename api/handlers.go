@@ -5,9 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"os"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/dghubble/go-twitter/twitter"
 	"github.com/go-chi/chi"
 	"github.com/google/uuid"
 
@@ -28,7 +31,9 @@ import (
 )
 
 const (
-	secret = "9f33e0f0086e439ebb41190167c9c83f62db6da68cac8ee95506855788b4abe9"
+	secret  = "9f33e0f0086e439ebb41190167c9c83f62db6da68cac8ee95506855788b4abe9"
+	success = "\u2713"
+	failed  = "\u2717"
 )
 
 func (s *Server) handlePing(w http.ResponseWriter, r *http.Request) {
@@ -147,7 +152,7 @@ func (s *Server) handleAssignAvatars(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	s.log.Printf("%+v\n", assignRequest)
+	// s.log.Printf("%+v\n", assignRequest)
 
 	var a avatar.UpdateAvatar
 	for _, id := range assignRequest.Avatars {
@@ -184,7 +189,7 @@ func (s *Server) handleAvatarUpload(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
-	usernames, err := readFile(file)
+	usernames, err := readCSV(file)
 	if err != nil {
 		s.log.Printf("api: %v\n", err)
 		render.Render(w, r, ErrInternalServerError)
@@ -452,45 +457,6 @@ func (s *Server) handleTotals(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInternalServerError)
 		return
 	}
-
-	// var (
-	// 	tweets    int
-	// 	following int
-	// 	followers int
-	// 	avatars   int
-	// 	likes     int
-	// )
-
-	// for _, av := range avs {
-	// 	if av.Tweets != nil {
-	// 		tweets += *av.Tweets //total tweets
-	// 	}
-
-	// 	if av.Following != nil {
-	// 		following += *av.Following //total following
-	// 	}
-
-	// 	if av.Followers != nil {
-	// 		followers += *av.Followers //total followers
-	// 	}
-
-	// 	if av.Likes != nil {
-	// 		likes += *av.Likes //total likes
-	// 	}
-
-	// 	avatars++ //total avatars
-	// }
-
-	// var mgByFollowers *avatar.Avatar
-
-	//TODO:
-	// mgByFollowers, err = avatar.GetHighestGainedBy(s.ctx, s.db, "Followers", 1)
-
-	// if err != nil {
-	// 	s.log.Printf("api: %v\n", err)
-	// 	render.Render(w, r, ErrInternalServerError)
-	// 	return
-	// }
 
 	totals := struct {
 		Avatars     int `json:"avatars"`
@@ -915,31 +881,59 @@ func (s *Server) handleWeeklyStats(w http.ResponseWriter, r *http.Request) {
 	render.Respond(w, r, weeklyStats)
 }
 
-func readFile(reader io.Reader) ([]string, error) {
+// func readFile(reader io.Reader) ([]string, error) {
 
-	r := csv.NewReader(reader)
+// 	r := csv.NewReader(reader)
 
+// 	var usernames []string
+// 	var header []string
+
+// 	for {
+// 		line, err := r.Read()
+// 		if err == io.EOF {
+// 			break
+// 		}
+
+// 		if err != nil {
+// 			return usernames, err
+// 		}
+
+// 		if header == nil {
+// 			header = line
+// 			continue
+// 		}
+
+// 		usernames = append(usernames, line[0])
+
+// 	}
+// 	return usernames, nil
+// }
+
+func readCSV(reader io.Reader) ([]string, error) {
 	var usernames []string
 	var header []string
-
+	r := csv.NewReader(reader)
 	for {
-		line, err := r.Read()
+		row, err := r.Read()
 		if err == io.EOF {
 			break
 		}
 
 		if err != nil {
-			return usernames, err
+			fmt.Printf("\t%s\terror reading row: %v\n", failed, err)
+			break
 		}
 
 		if header == nil {
-			header = line
+			header = row
 			continue
 		}
 
-		usernames = append(usernames, line[0])
-
+		for _, r := range row {
+			usernames = append(usernames, r)
+		}
 	}
+
 	return usernames, nil
 }
 
@@ -953,16 +947,18 @@ func (s *Server) TwitterLookup() error {
 		return err
 	}
 
+	fmt.Printf("Avatars fetched from Database%v\n", len(avatars))
+
 	var usernames []string
 	dict := make(map[string]string)
 
 	if len(avatars) > 0 {
 		for _, avatar := range avatars {
-			usernames = append(usernames, avatar.Username)
+			usernames = append(usernames, strings.ToLower(avatar.Username))
 			dict[strings.ToLower(avatar.Username)] = avatar.ID
 		}
 
-		twitter := service.NewTwitter(s.cfg.TwitterConsumerKey, s.cfg.TwitterConsumerSecret, s.cfg.TwitterAccessSecret, s.cfg.TwitterAccessToken, s.cfg.TwitterTokenURL)
+		ts := service.NewTwitter(s.cfg.TwitterConsumerKey, s.cfg.TwitterConsumerSecret, s.cfg.TwitterAccessSecret, s.cfg.TwitterAccessToken, s.cfg.TwitterTokenURL)
 
 		chunks := chunkBy(usernames, 100)
 		var nps []profile.NewProfile
@@ -970,7 +966,7 @@ func (s *Server) TwitterLookup() error {
 		var terror error
 		for _, chunk := range chunks {
 
-			tusers, err := twitter.Lookup(ctx, chunk)
+			tusers, err := ts.Lookup(ctx, chunk)
 			if err != nil {
 				terror = err
 				break
@@ -997,7 +993,7 @@ func (s *Server) TwitterLookup() error {
 					np.Bio = stringPointer(user.Description)
 					np.TwitterID = stringPointer(user.IDStr)
 					np.JoinDate = stringPointer(user.CreatedAt)
-					np.LastTweetTime = stringPointer(twitter.LastTweetTime(user.ID))
+					np.LastTweetTime = stringPointer(ts.LastTweetTime(user.ID))
 					nps = append(nps, np)
 					// if err := profile.Create(s.ctx, s.db, &np, now); err != nil {
 					// 	fmt.Printf("profiler: %v\n", err)
@@ -1014,9 +1010,10 @@ func (s *Server) TwitterLookup() error {
 			fmt.Printf("profiler: %v\n", err)
 			return err
 		}
-
+		return nil
 	}
-	return nil
+
+	return errors.New("No avatars fetched from database")
 }
 
 func stringPointer(s string) *string {
@@ -1032,4 +1029,51 @@ func chunkBy(items []string, chunkSize int) (chunks [][]string) {
 		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
 	}
 	return append(chunks, items)
+}
+
+func writeCSV(twitter *service.TwitterService, users [][]twitter.User) {
+	t := time.Now()
+	filename := fmt.Sprintf("%d-%02d-%02d.csv\n",
+		t.Year(), t.Month(), t.Day())
+	file, err := os.Create(filename)
+	if err != nil {
+		fmt.Printf("\t%s\tcannot write to file: %v\n", failed, err)
+		os.Exit(1)
+	}
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	header := []string{"id", "name", "username", "bio", "tweets", "following", "followers", "likes", "location", "join_date", "last_tweet_time", "profile_image_url"}
+
+	//write the header first
+	if err := writer.Write(header); err != nil {
+		fmt.Printf("\t%s\terror writing header content: %v\n", failed, err)
+		os.Exit(1)
+	}
+
+	for _, user := range users {
+		for _, u := range user {
+			//Each iteration  creates a new row/line
+			var row []string
+
+			row = append(row, u.IDStr)
+			row = append(row, u.Name)
+			row = append(row, u.ScreenName)
+			row = append(row, u.Description)
+			row = append(row, strconv.Itoa(u.StatusesCount))
+			row = append(row, strconv.Itoa(u.FriendsCount))
+			row = append(row, strconv.Itoa(u.FollowersCount))
+			row = append(row, strconv.Itoa(u.FavouritesCount))
+			row = append(row, u.Location)
+			row = append(row, u.CreatedAt)
+			row = append(row, twitter.LastTweetTime(u.ID))
+			row = append(row, u.ProfileImageURLHttps)
+			err := writer.Write(row)
+			if err != nil {
+				fmt.Printf("\t%s\terror writing body content: %v\n", failed, err)
+				os.Exit(1)
+			}
+		}
+	}
 }
