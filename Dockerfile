@@ -1,18 +1,36 @@
-FROM golang:1.15 AS builder
+FROM golang:1.15-alpine as base
 
-RUN mkdir /app
-ADD . /app
-WORKDIR /app
-RUN chmod +x /app/wait-for-it.sh
-RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/app/
-RUN CGO_ENABLED=0 GOOS=linux go build -o admin ./cmd/admin/
+WORKDIR /avatarlysis
+
+FROM aquasec/trivy:0.14.0 as trivy
+
+RUN trivy --debug --timeout 4m golang:1.15-alpine && \
+  echo "No image vulnerabilities" > result
+
+FROM base as dev
+
+COPY  . .
+
+RUN go mod download
+RUN go mod verify
+
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:/usr/local/go/bin:$PATH
+
+RUN go env
+
+RUN go build -o main ./cmd/app/
+
+EXPOSE 8880
 
 FROM alpine:3.10 AS production
 RUN apk --no-cache add ca-certificates --upgrade bash
 
 
-COPY --from=builder /app .
+COPY --from=dev /avatarlysis .
+COPY --from=dev /avatarlysis/private.pem .
 
-CMD ["sh","run.sh"]
+
+CMD ["./main"]
 
 
