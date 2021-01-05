@@ -2,6 +2,7 @@ package profile
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"time"
@@ -153,14 +154,14 @@ func GetInitialDate(ctx context.Context, db *sqlx.DB) (time.Time, error) {
 	const q = `select min(created_at) as created_at from profiles`
 
 	profile := struct {
-		CreatedAt time.Time `db:"created_at"`
+		CreatedAt sql.NullTime `db:"created_at"`
 	}{}
 
 	if err := db.GetContext(ctx, &profile, q); err != nil {
 		return time.Time{}, errors.Wrap(err, "retrieving the first profile creation date")
 	}
 
-	return profile.CreatedAt, nil
+	return profile.CreatedAt.Time, nil
 }
 
 //GetMostRecentCreateDate gets the date the latest profile was created
@@ -172,12 +173,12 @@ func GetMostRecentCreateDate(ctx context.Context, db *sqlx.DB) (time.Time, error
 	const q = `select max(created_at) as created_at from profiles`
 
 	profile := struct {
-		CreatedAt time.Time `db:"created_at"`
+		CreatedAt sql.NullTime `db:"created_at"`
 	}{}
 
 	if err := db.GetContext(ctx, &profile, q); err != nil {
 		return time.Time{}, errors.Wrap(err, "retrieving the most recent profile creation date")
 	}
 
-	return profile.CreatedAt, nil
+	return profile.CreatedAt.Time, nil
 }
