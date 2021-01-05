@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"time"
 
 	"ekraal.org/avatarlysis/api"
 	"ekraal.org/avatarlysis/business/data/auth"
@@ -67,10 +68,25 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err := database.Ping(ctx, db); err != nil {
-		logger.Printf("main: %s", errors.Wrap(err, "pinging db"))
+	var pingError error
+	maxAttempts := 20
+	for attempts := 1; attempts <= maxAttempts; attempts++ {
+		pingError = database.Ping(ctx, db)
+		if pingError == nil {
+			break
+		}
+		time.Sleep(time.Duration(attempts) * 100 * time.Millisecond)
+	}
+
+	if pingError != nil {
+		logger.Printf("database never ready: %v", pingError)
 		os.Exit(1)
 	}
+
+	// if err := database.Ping(ctx, db); err != nil {
+	// 	logger.Printf("main: %s", errors.Wrap(err, "pinging db"))
+	// 	os.Exit(1)
+	// }
 
 	defer func() {
 		logger.Printf("main: Database Stopping : %s", cfg.DatabaseHost)
