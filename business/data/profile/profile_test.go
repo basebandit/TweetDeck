@@ -52,12 +52,12 @@ func TestProfile(t *testing.T) {
 			}
 
 			updA := avatar.UpdateAvatar{
-				UserID: tests.StringPointer(u.ID),
+				UserID: tests.StringPointer(u.ID.String()),
 			}
 
 			updatedTime := time.Date(2020, time.September, 9, 1, 1, 1, 0, time.UTC)
 
-			if err := avatar.Update(ctx, db, a.ID, updA, updatedTime); err != nil {
+			if err := avatar.UpdateUsername(ctx, db, a.ID, updA, updatedTime); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to update Avatar : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update Avatar.", tests.Success, testID)
@@ -76,7 +76,7 @@ func TestProfile(t *testing.T) {
 				TwitterID:       tests.StringPointer("1267757177999101953"),
 			}
 
-			if err := profile.Create(ctx, db, a.ID, &np, now); err != nil {
+			if err := profile.Create(ctx, db, &np, now); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to create Profile : %s", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to create Profile.", tests.Success, testID)
