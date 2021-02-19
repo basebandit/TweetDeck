@@ -98,7 +98,7 @@ func TestAvatar(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest %d:\tShould get back the same Avatar.", tests.Success, testID)
 
-			if _, err := avatar.GetByUserID(ctx, db, u.ID); err != nil {
+			if _, err := avatar.GetByUserID(ctx, db, u.ID.String()); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve avatars assigned to the given user : %s.", tests.Failed, testID, err)
 			}
 
