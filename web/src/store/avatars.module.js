@@ -31,7 +31,7 @@ export default {
      commit("fetchFromTwitter")
      AvatarService.getAvatarsFromTwitter(token).then(response => {
        if(response.status === 200){
-commit("fetchFromTwitterSuccess",{message:"fetched twitter avatars successsfully"})
+        commit("fetchFromTwitterSuccess",{message:"fetched twitter avatars successsfully"})
        }
      }).catch(err =>{
        commit("fetchFromTwitterFailure",{message:err.response.data.error})
