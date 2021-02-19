@@ -25,7 +25,7 @@
             <v-btn class="secondary ma-2" @click="download">
               <v-icon>mdi-file-excel</v-icon>Download CSV Template
             </v-btn>
-            <v-btn class="success ma-2" @click="upload">
+            <v-btn class="success ma-2" @click="upload" :loading="uploading">
               <v-icon>mdi-file-upload</v-icon>Upload
             </v-btn>
           </v-form>
