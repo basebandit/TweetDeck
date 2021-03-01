@@ -72,12 +72,12 @@ func TestAvatar(t *testing.T) {
 
 			updA := avatar.UpdateAvatar{
 				Username: tests.StringPointer("Basebandit"),
-				UserID:   tests.StringPointer(u.ID),
+				UserID:   tests.StringPointer(u.ID.String()),
 			}
 
 			updatedTime := time.Date(2020, time.September, 7, 1, 1, 1, 0, time.UTC)
 
-			if err := avatar.Update(ctx, db, a.ID, updA, updatedTime); err != nil {
+			if err := avatar.UpdateUserID(ctx, db, a.ID, updA, updatedTime); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to update Avatar : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update Avatar.", tests.Success, testID)
@@ -108,7 +108,7 @@ func TestAvatar(t *testing.T) {
 				Username: tests.StringPointer("Lure_Strings"),
 			}
 
-			if err := avatar.Update(ctx, db, a.ID, updA, updatedTime); err != nil {
+			if err := avatar.UpdateUserID(ctx, db, a.ID, updA, updatedTime); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to update just some of fields of Avatar : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update just some of the fields of Avatar.", tests.Success, testID)
