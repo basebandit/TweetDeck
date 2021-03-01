@@ -58,3 +58,4 @@ When everything runs successfully you should be able to have a beautiful and sim
 - Add circuit breaker logic for when we hit the twitter api limits.
 - Add metrics exporters e.g. prometheous.
 - Refactor code to enhance readability.
+- Add CI/CD (critical)
