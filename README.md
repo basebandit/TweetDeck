@@ -42,3 +42,14 @@ Run the frontend.To run it you will use docker to load the frontend image like s
 To stop the frontend server run:
 
         make web-down
+
+# WEB UI
+When everything runs successfully you should be able to have a beautiful and simple UI like the one shown below.   
+
+
+![Login Page](img/login.png)
+
+![Dashboard Page](img/dashboard.png)
+
+![Avatars Page](img/avatars.png)
+
