@@ -56,7 +56,7 @@ func TestUser(t *testing.T) {
 				Roles: []string{auth.RoleAdmin, auth.RoleUser},
 			}
 
-			savedU, err := user.GetByID(ctx, claims, db, u.ID)
+			savedU, err := user.GetByID(ctx, claims, db, u.ID.String())
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve user by ID: %s.", tests.Failed, testID, err)
 			}
@@ -73,7 +73,7 @@ func TestUser(t *testing.T) {
 				Email:     tests.StringPointer("parish@nsynclabs.com"),
 			}
 
-			if err := user.Update(ctx, claims, db, u.ID, updU, now); err != nil {
+			if err := user.Update(ctx, claims, db, u.ID.String(), updU, now); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to update user : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to update user.", tests.Success, testID)
@@ -84,7 +84,7 @@ func TestUser(t *testing.T) {
 			}
 			t.Logf("\t%s\tTest: %d\tShould be able to retrieve user by email.", tests.Success, testID)
 
-			savedU, err = user.GetByID(ctx, claims, db, u.ID)
+			savedU, err = user.GetByID(ctx, claims, db, u.ID.String())
 			if err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to retrieve user by ID: %s.", tests.Failed, testID, err)
 			}
@@ -114,12 +114,12 @@ func TestUser(t *testing.T) {
 				t.Logf("\t%s\tTest %d:\tShould be able to see update to Email.", tests.Success, testID)
 			}
 
-			if err := user.Delete(ctx, db, u.ID); err != nil {
+			if err := user.Delete(ctx, db, u.ID.String()); err != nil {
 				t.Fatalf("\t%s\tTest %d:\tShould be able to delete user : %s.", tests.Failed, testID, err)
 			}
 			t.Logf("\t%s\tTest %d:\tShould be able to delete user.", tests.Success, testID)
 
-			_, err = user.GetByID(ctx, claims, db, u.ID)
+			_, err = user.GetByID(ctx, claims, db, u.ID.String())
 			if errors.Cause(err) != user.ErrNotFound {
 				t.Fatalf("\t%s\tTests %d:\tShould NOT be able to retrieve user : %s.", tests.Failed, testID, err)
 			}
@@ -171,7 +171,7 @@ func TestAuthenticate(t *testing.T) {
 				Roles: u.Roles,
 				StandardClaims: jwt.StandardClaims{
 					Issuer:    "avatarlysis",
-					Subject:   u.ID,
+					Subject:   u.ID.String(),
 					Audience:  "clients",
 					ExpiresAt: now.Add(time.Hour).Unix(),
 					IssuedAt:  now.Unix(),
