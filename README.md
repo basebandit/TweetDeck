@@ -53,3 +53,8 @@ When everything runs successfully you should be able to have a beautiful and sim
 
 ![Avatars Page](img/avatars.png)
 
+
+## TODO
+- Add circuit breaker logic for when we hit the twitter api limits.
+- Add metrics exporters e.g. prometheous.
+- Refactor code to enhance readability.
