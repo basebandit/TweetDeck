@@ -1,2 +1,10 @@
+#ignore ssh keys and bash config scripts
 *.pem
 *.sh
+
+# Editor directories and files
+.idea
+.vscode
+
+# ignore tar files (exported docker images)
+*.tar
