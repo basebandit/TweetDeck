@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"ekraal.org/avatarlysis/business/data/auth"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/pkg/errors"
 
 	"github.com/google/uuid"

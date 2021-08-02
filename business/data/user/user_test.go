@@ -7,7 +7,7 @@ import (
 	"ekraal.org/avatarlysis/business/data/auth"
 	"ekraal.org/avatarlysis/business/data/schema"
 	"ekraal.org/avatarlysis/business/data/user"
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
 
